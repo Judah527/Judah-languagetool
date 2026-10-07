@@ -1,0 +1,2189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Language Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one drill column. Tabs on top; the current card in the middle; feedback directly under the answer. Same ink-blue identity as the Ladder Reader, with an amber root color. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #18202b;
+  --muted: #5a6574;
+  --line: #d6dce4;
+  --accent: #2c55c9;
+  --accent-soft: rgba(44, 85, 201, 0.10);
+  --root: #a8650f;
+  --good: #1f7a4d;
+  --good-soft: rgba(31, 122, 77, 0.12);
+  --bad: #b3362b;
+  --bad-soft: rgba(179, 54, 43, 0.10);
+  --font-hebrew: "Frank Ruhl Libre", "Noto Serif Hebrew", "David", "Times New Roman", serif;
+  --font-ui: "IBM Plex Sans", "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui-he: "IBM Plex Sans Hebrew", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161c; --surface: #1a2029; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3542;
+    --accent: #8aa8ff; --accent-soft: rgba(138, 168, 255, 0.14); --root: #f0b45c;
+    --good: #5cc98f; --good-soft: rgba(92, 201, 143, 0.14); --bad: #ff8a7a; --bad-soft: rgba(255, 138, 122, 0.12);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161c; --surface: #1a2029; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3542;
+  --accent: #8aa8ff; --accent-soft: rgba(138, 168, 255, 0.14); --root: #f0b45c;
+  --good: #5cc98f; --good-soft: rgba(92, 201, 143, 0.14); --bad: #ff8a7a; --bad-soft: rgba(255, 138, 122, 0.12);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; padding-block: 24px 56px; padding-inline: 16px; }
+.wrap { max-width: 680px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 4px; }
+.eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 600; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { font: 500 14px var(--font-ui); background: none; border: 0; color: var(--muted); padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 16px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+label.small { font-size: 13px; color: var(--muted); }
+select { font: 15px var(--font-ui); padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); }
+.counter { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.anchor { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.inf { font-family: var(--font-hebrew); font-size: 30px; line-height: 1.2; direction: rtl; }
+.meaning { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; direction: rtl; }
+.chip { font: 500 14px var(--font-ui-he); padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); }
+.chip.root { color: var(--root); background: transparent; border: 1px solid var(--line); font-family: var(--font-hebrew); font-size: 17px; font-weight: 700; }
+.prompt-line { font-family: var(--font-ui-he); font-size: 20px; direction: rtl; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.prompt-line .q { font-family: var(--font-hebrew); color: var(--muted); }
+
+.options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opt { font: 500 26px var(--font-hebrew); direction: rtl; padding: 14px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt:disabled { cursor: default; }
+.opt.binyan { font: 500 16px var(--font-ui); display: grid; gap: 2px; }
+.opt.binyan .he-name { font-family: var(--font-hebrew); font-size: 22px; }
+
+.feedback { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
+.verdict { font-weight: 600; }
+.verdict.good { color: var(--good); }
+.verdict.bad { color: var(--bad); }
+.he { font-family: var(--font-hebrew); font-size: 20px; direction: rtl; unicode-bidi: isolate; }
+.note { color: var(--muted); font-size: 14px; margin: 0; max-width: 62ch; }
+
+button.btn { font: 500 14px var(--font-ui); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 8px 14px; cursor: pointer; }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.btn:hover { border-color: var(--accent); }
+button.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.summary div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 2px; }
+.summary b { font: 500 22px var(--font-mono); font-variant-numeric: tabular-nums; }
+.summary span { font-size: 12px; color: var(--muted); }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: start; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; min-width: 60px; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+
+.guide h2 { margin: 0; font-size: 17px; }
+.guide h3 { margin: 8px 0 0; font-size: 15px; }
+.guide p, .guide li { max-width: 62ch; }
+.guide ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; }
+textarea#log-out { width: 100%; min-height: 120px; font: 12px var(--font-mono); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.status { font-size: 13px; color: var(--muted); }
+footer { font-size: 12.5px; color: var(--muted); max-width: 62ch; }
+
+@media (max-width: 480px) {
+  .card { padding: 16px; }
+  .opt { font-size: 23px; padding: 12px 8px; }
+  .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.note-inline { font-size: 13px; color: var(--muted); margin-inline-start: 8px; }
+.toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.from-to { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.from-to > div { display: grid; gap: 2px; }
+.small-he { font-family: var(--font-ui-he); font-size: 13px; color: var(--muted); }
+.arrow { font-size: 24px; color: var(--muted); }
+.q { font-family: var(--font-hebrew); color: var(--muted); }
+.sentence { font-family: var(--font-hebrew); font-size: 28px; line-height: 1.6; }
+.sentence.small { font-size: 21px; }
+.sentence b { color: var(--accent); font-weight: 500; }
+.blank { color: var(--accent); letter-spacing: 0.04em; }
+.options.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pair-grid { display: grid; gap: 6px; }
+.pair-grid > div { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+@media (max-width: 480px) { .sentence { font-size: 24px; } }
+
+.send { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 10px; }
+.send h3 { margin: 0; font-size: 15px; }
+.send input[type="text"] { font: 15px var(--font-ui); padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); min-width: 0; flex: 1 1 180px; max-width: 260px; }
+
+.btn.small { font-size: 13px; padding: 5px 10px; }
+.feedback-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.cmt-link { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.cmt-link:hover { color: var(--accent); }
+.cmt-row { display: flex; justify-content: flex-end; margin-top: 6px; }
+.guide .cmt-able { cursor: pointer; border-radius: 6px; transition: background .15s; }
+.guide .cmt-able:hover { background: var(--accent-soft); }
+.cmt-hint { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; margin: 0 0 8px; }
+.modal-back { position: fixed; inset: 0; background: rgba(15, 20, 28, .45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.modal { background: var(--surface); color: var(--ink); border-radius: 14px; width: 100%; max-width: 460px; max-height: calc(100vh - 32px); overflow: auto; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.25); display: grid; gap: 12px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.modal-head h3 { margin: 0; font-size: 16px; }
+.modal-x { border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; line-height: 1; }
+.cmt-quote { border-left: 3px solid var(--root); background: var(--bg); padding: 8px 10px; border-radius: 6px; font-size: 14px; color: var(--muted); max-height: 7.5em; overflow: hidden; }
+.chips-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-pick { border: 1px solid var(--line); background: none; color: var(--ink); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+.chip-pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.modal textarea, .modal input[type=text] { width: 100%; box-sizing: border-box; font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+.modal textarea:focus, .modal input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.modal-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wordcard { border: 1px solid var(--line); border-radius: 9px; padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.pointed { font-family: var(--font-hebrew); font-size: 30px; line-height: 1.3; direction: rtl; }
+.ex { display: grid; gap: 6px; }
+mark { background: var(--accent-soft); color: var(--accent); border-radius: 4px; padding: 0 2px; }
+.en-reveal summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.anchor .btn.small { align-self: center; }
+
+.import { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
+.import summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+textarea#import-text { width: 100%; min-height: 90px; font: 12px var(--font-mono); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+
+.ext { font-size: 13px; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.from-to .inf { font-size: 26px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg-btn { font: 500 13.5px var(--font-ui); background: var(--surface); color: var(--muted); border: 0; padding: 7px 12px; cursor: pointer; }
+.seg-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+.seg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.v-sentences { margin: 0; padding-inline-start: 22px; display: grid; gap: 8px; }
+.v-sentences li { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.v-def { font-family: var(--font-hebrew); font-size: 20px; line-height: 1.5; }
+
+.ex-list { margin: 0; padding-inline-start: 22px; display: grid; gap: 10px; }
+.ex-item { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.ex-item .en { flex-basis: 100%; }
+
+.aff { color: var(--accent); font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 9px; }
+table.endings td.he { font-size: 22px; line-height: 2; }
+ol.steps { margin: 0; padding-inline-start: 22px; display: grid; gap: 10px; }
+ol.steps ul { margin-top: 6px; }
+
+.tense-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tense-col { border: 1px solid var(--line); border-radius: 9px; padding: 12px 10px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.tense-col h4 { margin: 0; text-align: center; font: 600 17px var(--font-hebrew); color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.tf { display: grid; gap: 0; }
+.tf .pron { font: 12.5px var(--font-ui-he); color: var(--muted); }
+.tf .form { font-family: var(--font-hebrew); font-size: 22px; line-height: 1.9; }
+.pron-note { margin: 0; font: 12.5px var(--font-ui); color: var(--muted); direction: ltr; text-align: left; }
+@media (max-width: 480px) { .tense-col { padding: 10px 6px; } .tf .form { font-size: 19px; } }
+
+table.gender td.he { font-size: 19px; line-height: 1.8; }
+
+@media (max-width: 520px) {
+  table.gender thead { display: none; }
+  table.gender tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  table.gender td { border: 0; padding: 0; }
+  table.gender td:first-child { grid-column: 1 / -1; font-weight: 600; font-size: 13.5px; }
+  table.gender td.he::before { content: attr(data-label); display: block; font: 11.5px var(--font-ui); color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+}
+
+.settings { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
+.settings h3 { margin: 0; font-size: 15px; }
+</style>
+</head>
+<body>
+<!-- Netlify detects these at deploy time; the page submits to them with JavaScript. -->
+<form name="results" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="name"><textarea name="summary"></textarea><textarea name="data"></textarea>
+</form>
+<form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="name"><input name="tab"><input name="category"><textarea name="context"></textarea><textarea name="message"></textarea><textarea name="summary"></textarea>
+</form>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Prototype v0 · Hebrew verbs and words</div>
+    <h1>Language Tool</h1>
+    <p class="lede">Build and change verb forms across binyanim, tenses and persons, choose between sibling verbs by meaning, and learn new words from context. What you get right quickly comes up less; what slows you down comes back.</p>
+    <div class="feedback-row" id="fb-row"><button class="btn small" type="button" id="fb-btn">Leave feedback</button><span class="note-inline" id="fb-note">Or tap "Comment" on any question, or any part of the Guide.</span></div>
+  </header>
+
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-build" aria-selected="true" data-view="build">Build the form</button>
+    <button class="tab" role="tab" id="tab-transform" aria-selected="false" data-view="transform">Transform</button>
+    <button class="tab" role="tab" id="tab-siblings" aria-selected="false" data-view="siblings">Sibling verbs</button>
+    <button class="tab" role="tab" id="tab-vocab" aria-selected="false" data-view="vocab">New words</button>
+    <button class="tab" role="tab" id="tab-guide" aria-selected="false" data-view="guide">Guide</button>
+    <button class="tab" role="tab" id="tab-progress" aria-selected="false" data-view="progress">Progress</button>
+  </nav>
+
+  <section id="view-build" class="card"></section>
+  <section id="view-transform" class="card" hidden></section>
+  <section id="view-siblings" class="card" hidden></section>
+  <section id="view-vocab" class="card" hidden></section>
+  <section id="view-guide" class="card guide" hidden></section>
+  <section id="view-progress" class="card" hidden></section>
+
+  <footer>Forms are generated by rule from regular roots and checked against standard spelling without vowels. Some forms look identical (כתבת is "you wrote" for both a man and a woman); any matching spelling counts. Answers that take over 30 seconds are treated as a pause and left out of your times. Progress is kept in this browser only; copy it from the Progress tab to save it.</footer>
+</div>
+
+<script>
+/* ---------- Verb engine ---------- */
+const SOFIT = { 'כ': 'ך', 'מ': 'ם', 'נ': 'ן', 'פ': 'ף', 'צ': 'ץ' };
+const fin = (w) => (SOFIT[w.slice(-1)] ? w.slice(0, -1) + SOFIT[w.slice(-1)] : w);
+const PERSONS = ['אני', 'אתה', 'את', 'הוא', 'היא', 'אנחנו', 'אתם', 'הם'];
+const PRESENT = ['הוא', 'היא', 'הם', 'הן'];
+const TENSES = { past: 'עבר', pres: 'הווה', fut: 'עתיד' };
+
+function hitStem(a, b, c) {
+  if (a === 'ס' || a === 'ש') return a + 'ת' + b + c;
+  if (a === 'צ') return a + 'ט' + b + c;
+  if (a === 'ז') return a + 'ד' + b + c;
+  return 'ת' + a + b + c;
+}
+function pastSet(s1, s3) {
+  s3 = s3 || s1;
+  return { 'אני': s1 + 'תי', 'אתה': s1 + 'ת', 'את': s1 + 'ת', 'הוא': s3, 'היא': s3 + 'ה', 'אנחנו': s1 + 'נו', 'אתם': s1 + 'תם', 'הם': s3 + 'ו' };
+}
+function futSet(pre, sg, pl) {
+  // pre: object of prefixes per person; sg stem; pl stem for forms with suffix
+  return { 'אני': pre.a + sg, 'אתה': pre.t + sg, 'את': pre.t + pl + 'י', 'הוא': pre.y + sg, 'היא': pre.t + sg, 'אנחנו': pre.n + sg, 'אתם': pre.t + pl + 'ו', 'הם': pre.y + pl + 'ו' };
+}
+const PLAIN = { a: 'א', t: 'ת', y: 'י', n: 'נ' };
+function conjugate(root, binyan, opts) {
+  opts = opts || {};
+  const [a, b, c] = root.split('-');
+  let past, pres, fut, inf;
+  if (binyan === 'paal') {
+    past = pastSet(a + b + c);
+    const ps = a + 'ו' + b + c;
+    pres = { 'הוא': ps, 'היא': ps + 'ת', 'הם': ps + 'ים', 'הן': ps + 'ות' };
+    fut = futSet(PLAIN, opts.futA ? a + b + c : a + b + 'ו' + c, a + b + c);
+    inf = 'ל' + a + b + 'ו' + c;
+  } else if (binyan === 'piel') {
+    past = pastSet(a + 'י' + b + c);
+    const ps = 'מ' + a + b + c;
+    pres = { 'הוא': ps, 'היא': ps + 'ת', 'הם': ps + 'ים', 'הן': ps + 'ות' };
+    fut = futSet(PLAIN, a + b + c, a + b + c);
+    inf = 'ל' + a + b + c;
+  } else if (binyan === 'hifil') {
+    past = pastSet('ה' + a + b + c, 'ה' + a + b + 'י' + c);
+    const ps = 'מ' + a + b + 'י' + c;
+    pres = { 'הוא': ps, 'היא': ps + 'ה', 'הם': ps + 'ים', 'הן': ps + 'ות' };
+    fut = futSet(PLAIN, a + b + 'י' + c, a + b + 'י' + c);
+    inf = 'לה' + a + b + 'י' + c;
+  } else if (binyan === 'hitpael') {
+    const st = hitStem(a, b, c);
+    past = pastSet('ה' + st);
+    pres = { 'הוא': 'מ' + st, 'היא': 'מ' + st + 'ת', 'הם': 'מ' + st + 'ים', 'הן': 'מ' + st + 'ות' };
+    fut = futSet(PLAIN, st, st);
+    inf = 'לה' + st;
+  } else if (binyan === 'nifal') {
+    const s = 'נ' + a + b + c;
+    past = pastSet(s);
+    pres = { 'הוא': s, 'היא': s + 'ת', 'הם': s + 'ים', 'הן': s + 'ות' };
+    fut = futSet({ a: 'א', t: 'תי', y: 'יי', n: 'ני' }, a + b + c, a + b + c);
+    inf = 'להי' + a + b + c;
+  }
+  if (c === 'נ') past['אנחנו'] = past['אנחנו'].replace(/ננו$/, 'נו');
+  const f = (o) => { for (const k in o) o[k] = fin(o[k]); return o; };
+  return { past: f(past), pres: f(pres), fut: f(fut), inf: fin(inf) };
+}
+
+/* ---------- Verb data ---------- */
+const BINYAN = {
+  paal: { he: 'פָּעַל', en: 'פָּעַל' },
+  piel: { he: 'פִּעֵל', en: 'פִּעֵל' },
+  hifil: { he: 'הִפְעִיל', en: 'הִפְעִיל' },
+  hitpael: { he: 'הִתְפַּעֵל', en: 'הִתְפַּעֵל' },
+  nifal: { he: 'נִפְעַל', en: 'נִפְעַל' }
+};
+const BINYAN_CLUE = {
+  paal: 'פָּעַל: the root letters come straight after the prefix. Present has ו after the first root letter (כותב); future and infinitive often have ו before the last letter (יכתוב, לכתוב).',
+  piel: 'פִּעֵל: present starts with מ (מדבר); past has י after the first root letter (דיבר). No ו before the last letter.',
+  hifil: 'הִפְעִיל: ה in the past, מ in the present, and י before the last root letter in most forms (הסביר, מסביר, יסביר).',
+  hitpael: 'הִתְפַּעֵל: a ת right after the prefix (התלבש, מתלבש, יתלבש). After ס or ש the ת swaps inside (השתמש); after צ it becomes ט, after ז it becomes ד.',
+  nifal: 'נִפְעַל: נ at the start in past and present (נכנס). In the future the prefix is followed by י (ייכנס, תיכנס); the infinitive is להי־.'
+};
+
+// Verbs used in "Build the form" (regular roots; forms generated and checked)
+const VERBS = [
+  { root: 'כ-ת-ב', b: 'paal', p: 'לִכְתּוֹב', e: 'write' },
+  { root: 'כ-ת-ב', b: 'hitpael', p: 'לְהִתְכַּתֵּב', e: 'write to each other, correspond' },
+  { root: 'כ-ת-ב', b: 'hifil', p: 'לְהַכְתִּיב', e: 'dictate' },
+  { root: 'כ-ת-ב', b: 'nifal', p: 'לְהִכָּתֵב', e: 'be written' },
+  { root: 'ל-ב-ש', b: 'paal', p: 'לִלְבּוֹשׁ', e: 'wear', o: { futA: true } },
+  { root: 'ל-ב-ש', b: 'hitpael', p: 'לְהִתְלַבֵּשׁ', e: 'get dressed' },
+  { root: 'ל-ב-ש', b: 'hifil', p: 'לְהַלְבִּישׁ', e: 'dress (someone)' },
+  { root: 'ל-מ-ד', b: 'paal', p: 'לִלְמוֹד', e: 'learn, study', o: { futA: true } },
+  { root: 'ל-מ-ד', b: 'piel', p: 'לְלַמֵּד', e: 'teach' },
+  { root: 'ג-ד-ל', b: 'piel', p: 'לְגַדֵּל', e: 'raise, grow (something)' },
+  { root: 'ג-ד-ל', b: 'hifil', p: 'לְהַגְדִּיל', e: 'enlarge, increase' },
+  { root: 'כ-נ-ס', b: 'nifal', p: 'לְהִכָּנֵס', e: 'go in, enter' },
+  { root: 'כ-נ-ס', b: 'hifil', p: 'לְהַכְנִיס', e: 'put in, bring in' },
+  { root: 'ר-ג-ש', b: 'hifil', p: 'לְהַרְגִּישׁ', e: 'feel' },
+  { root: 'ר-ג-ש', b: 'hitpael', p: 'לְהִתְרַגֵּשׁ', e: 'get excited, be moved' },
+  { root: 'ק-ש-ר', b: 'paal', p: 'לִקְשׁוֹר', e: 'tie' },
+  { root: 'ק-ש-ר', b: 'hitpael', p: 'לְהִתְקַשֵּׁר', e: 'call (by phone), connect' },
+  { root: 'ד-ב-ר', b: 'piel', p: 'לְדַבֵּר', e: 'speak, talk' },
+  { root: 'ש-ל-מ', b: 'piel', p: 'לְשַׁלֵּם', e: 'pay' },
+  { root: 'ג-מ-ר', b: 'paal', p: 'לִגְמוֹר', e: 'finish' },
+  { root: 'ס-ב-ר', b: 'hifil', p: 'לְהַסְבִּיר', e: 'explain' },
+  { root: 'ח-ל-ט', b: 'hifil', p: 'לְהַחְלִיט', e: 'decide' },
+  { root: 'ת-ח-ל', b: 'hifil', p: 'לְהַתְחִיל', e: 'begin, start' },
+  { root: 'ש-מ-ש', b: 'hitpael', p: 'לְהִשְׁתַּמֵּשׁ', e: 'use' },
+  { root: 'ס-כ-ל', b: 'hitpael', p: 'לְהִסְתַּכֵּל', e: 'look' }
+].map((v, i) => Object.assign(v, { id: i, forms: conjugate(v.root, v.b, v.o) }));
+
+// Extra infinitives for "Spot the binyan" only (irregular or not conjugated here)
+const SPOT_EXTRA = [
+  { root: 'ז-מ-נ', b: 'hifil', u: 'להזמין', p: 'לְהַזְמִין', e: 'invite, order' },
+  { root: 'פ-ת-ח', b: 'paal', u: 'לפתוח', p: 'לִפְתּוֹחַ', e: 'open' },
+  { root: 'פ-ת-ח', b: 'nifal', u: 'להיפתח', p: 'לְהִפָּתַח', e: 'open (by itself), be opened' },
+  { root: 'צ-ר-כ', b: 'hitpael', u: 'להצטרך', p: 'לְהִצְטָרֵךְ', e: 'need to, have to' },
+  { root: 'ז-ק-נ', b: 'hitpael', u: 'להזדקן', p: 'לְהִזְדַּקֵּן', e: 'grow old' }
+];
+const SPOT = VERBS.map((v) => ({ root: v.root, b: v.b, u: v.forms.inf, p: v.p, e: v.e })).concat(SPOT_EXTRA);
+const SPOT_TRAPS = {
+  'להתחיל': 'Trap: the ת belongs to the root ת-ח-ל. The י before the last letter shows it is הִפְעִיל, not הִתְפַּעֵל.',
+  'להשתמש': 'The ת of הִתְפַּעֵל swapped places with ש: root ש-מ-ש.',
+  'להסתכל': 'The ת of הִתְפַּעֵל swapped places with ס: root ס-כ-ל.',
+  'להצטרך': 'After צ the ת of הִתְפַּעֵל becomes ט: root צ-ר-ך.',
+  'להזדקן': 'After ז the ת of הִתְפַּעֵל becomes ד: root ז-ק-ן.',
+  'להתכתב': 'The ת right after לה is הִתְפַּעֵל; the next ת is part of the root כ-ת-ב.',
+  'להזמין': 'הִפְעִיל: לה + root, with י before the last letter.'
+};
+
+/* ---------- Sibling verbs: same root, different binyan, chosen by meaning ---------- */
+const MEANING = {
+  'ר-ג-ש|hifil': 'feel', 'ר-ג-ש|hitpael': 'get excited, be moved',
+  'ל-מ-ד|paal': 'learn, study', 'ל-מ-ד|piel': 'teach',
+  'כ-ת-ב|paal': 'write', 'כ-ת-ב|nifal': 'be written',
+  'כ-נ-ס|nifal': 'go in, enter', 'כ-נ-ס|hifil': 'put in',
+  'ל-ב-ש|paal': 'wear', 'ל-ב-ש|hitpael': 'get dressed', 'ל-ב-ש|hifil': 'dress (someone)'
+};
+const SIBS = [
+  { r: 'ר-ג-ש', s: 'אתה ___ יותר טוב?', a: 'מרגיש', b: 'hifil', x: 'מתרגש', xb: 'hitpael', en: 'Are you feeling better?' },
+  { r: 'ר-ג-ש', s: 'היא ממש ___ לפני הטיסה.', a: 'מתרגשת', b: 'hitpael', x: 'מרגישה', xb: 'hifil', en: "She's really excited before the flight." },
+  { r: 'ר-ג-ש', s: 'כולם ___ לקראת החתונה.', a: 'מתרגשים', b: 'hitpael', x: 'מרגישים', xb: 'hifil', en: "Everyone's excited about the wedding." },
+  { r: 'ר-ג-ש', s: 'אחרי הריצה ___ ממש טוב.', a: 'הרגשתי', b: 'hifil', x: 'התרגשתי', xb: 'hitpael', en: 'After the run I felt really good.' },
+  { r: 'ר-ג-ש', s: 'הוא ___ כשראה את הבת שלו על הבמה.', a: 'התרגש', b: 'hitpael', x: 'הרגיש', xb: 'hifil', en: 'He was moved when he saw his daughter on stage.' },
+  { r: 'ל-מ-ד', s: 'אני ___ לנהוג עכשיו, יש לי טסט בעוד חודש.', a: 'לומד', b: 'paal', x: 'מלמד', xb: 'piel', en: "I'm learning to drive now; I have my test in a month." },
+  { r: 'ל-מ-ד', s: 'אבא שלי ___ אותי לשחק שחמט.', a: 'לימד', b: 'piel', x: 'למד', xb: 'paal', en: 'My dad taught me to play chess.' },
+  { r: 'ל-מ-ד', s: 'מי ___ את הקבוצה השנה?', a: 'מלמד', b: 'piel', x: 'לומד', xb: 'paal', en: "Who's teaching the group this year?" },
+  { r: 'ל-מ-ד', s: 'אתם ___ ביחד למבחן?', a: 'לומדים', b: 'paal', x: 'מלמדים', xb: 'piel', en: 'Are you studying together for the test?' },
+  { r: 'כ-ת-ב', s: 'השיר הזה ___ אחרי המלחמה.', a: 'נכתב', b: 'nifal', x: 'כתב', xb: 'paal', en: 'This song was written after the war.' },
+  { r: 'כ-ת-ב', s: 'מי ___ את השיר הזה?', a: 'כתב', b: 'paal', x: 'נכתב', xb: 'nifal', en: 'Who wrote this song?' },
+  { r: 'כ-ת-ב', s: 'הוא ___ ספר חדש על ירושלים.', a: 'כותב', b: 'paal', x: 'נכתב', xb: 'nifal', en: "He's writing a new book about Jerusalem." },
+  { r: 'כ-ת-ב', s: 'זה ___ בעיתון אתמול.', a: 'נכתב', b: 'nifal', x: 'כתב', xb: 'paal', en: 'It was written in the paper yesterday.' },
+  { r: 'כ-נ-ס', s: 'סליחה, אפשר ___ רגע לחדר?', a: 'להיכנס', b: 'nifal', x: 'להכניס', xb: 'hifil', en: 'Excuse me, can I come into the room for a moment?' },
+  { r: 'כ-נ-ס', s: 'כולם ___ והתיישבו.', a: 'נכנסו', b: 'nifal', x: 'הכניסו', xb: 'hifil', en: 'Everyone came in and sat down.' },
+  { r: 'כ-נ-ס', s: '___ את הכביסה, מתחיל לרדת גשם!', a: 'תכניס', b: 'hifil', x: 'תיכנס', xb: 'nifal', en: "Bring in the laundry, it's starting to rain!" },
+  { r: 'כ-נ-ס', s: 'היא ___ את הילדים לאמבטיה.', a: 'מכניסה', b: 'hifil', x: 'נכנסת', xb: 'nifal', en: "She's putting the kids in the bath." },
+  { r: 'ל-ב-ש', s: 'רק שנייה, אני ___ ובא.', a: 'מתלבש', b: 'hitpael', x: 'לובש', xb: 'paal', en: "Just a sec, I'm getting dressed and coming." },
+  { r: 'ל-ב-ש', s: 'מה אתה ___ לחתונה?', a: 'לובש', b: 'paal', x: 'מתלבש', xb: 'hitpael', en: 'What are you wearing to the wedding?' },
+  { r: 'ל-ב-ש', s: 'הוא ___ ויצא בלי לאכול.', a: 'התלבש', b: 'hitpael', x: 'לבש', xb: 'paal', en: 'He got dressed and left without eating.' },
+  { r: 'ל-ב-ש', s: 'מי ___ את הילדים הבוקר?', a: 'הלביש', b: 'hifil', x: 'התלבש', xb: 'hitpael', en: 'Who dressed the kids this morning?' }
+];
+
+/* ---------- 25 more verbs (regular roots); pointed infinitive is generated ---------- */
+const NEW_VERBS = [
+  { root: 'ש-מ-ר', b: 'paal', e: 'keep, guard, save' },
+  { root: 'ס-ג-ר', b: 'paal', e: 'close' },
+  { root: 'ז-כ-ר', b: 'paal', e: 'remember' },
+  { root: 'פ-ג-ש', b: 'paal', e: 'meet, run into' },
+  { root: 'ש-ב-ר', b: 'paal', e: 'break' },
+  { root: 'ב-ד-ק', b: 'paal', e: 'check' },
+  { root: 'ס-פ-ר', b: 'piel', e: 'tell' },
+  { root: 'ב-ק-ש', b: 'piel', e: 'ask for, request' },
+  { root: 'ק-ב-ל', b: 'piel', e: 'receive, get' },
+  { root: 'ס-ד-ר', b: 'piel', e: 'arrange, tidy, sort out' },
+  { root: 'ת-ק-נ', b: 'piel', e: 'fix, correct' },
+  { root: 'פ-ט-ר', b: 'piel', e: 'fire (someone)' },
+  { root: 'ז-מ-נ', b: 'hifil', e: 'invite, order' },
+  { root: 'פ-ס-ק', b: 'hifil', e: 'stop' },
+  { root: 'ק-ש-ב', b: 'hifil', e: 'listen' },
+  { root: 'ס-כ-מ', b: 'hifil', e: 'agree' },
+  { root: 'מ-ש-כ', b: 'hifil', e: 'continue' },
+  { root: 'ד-ל-ק', b: 'hifil', e: 'turn on, light' },
+  { root: 'ס-ד-ר', b: 'hitpael', e: 'manage, work out, get along' },
+  { root: 'ק-ב-ל', b: 'hitpael', e: 'be accepted' },
+  { root: 'פ-ט-ר', b: 'hitpael', e: 'resign, quit' },
+  { root: 'ס-פ-ר', b: 'hitpael', e: 'get a haircut' },
+  { root: 'ש-ב-ר', b: 'nifal', e: 'break, get broken' },
+  { root: 'פ-ג-ש', b: 'nifal', e: 'meet up' },
+  { root: 'ג-מ-ר', b: 'nifal', e: 'end, run out' }
+];
+NEW_VERBS.forEach((v) => VERBS.push(Object.assign(v, { id: VERBS.length, forms: conjugate(v.root, v.b, v.o) })));
+
+Object.assign(MEANING, {
+  'ש-ב-ר|paal': 'break', 'ש-ב-ר|nifal': 'break, get broken',
+  'פ-ג-ש|paal': 'meet (someone), run into', 'פ-ג-ש|nifal': 'meet up (with each other)',
+  'ג-מ-ר|paal': 'finish', 'ג-מ-ר|nifal': 'end, run out',
+  'ס-פ-ר|piel': 'tell', 'ס-פ-ר|hitpael': 'get a haircut',
+  'ק-ב-ל|piel': 'receive, get', 'ק-ב-ל|hitpael': 'be accepted',
+  'ס-ד-ר|piel': 'arrange, sort out', 'ס-ד-ר|hitpael': 'manage, work out, get along',
+  'פ-ט-ר|piel': 'fire (someone)', 'פ-ט-ר|hitpael': 'resign, quit'
+});
+
+SIBS.push(
+  { r: 'ש-ב-ר', s: 'מי ___ את החלון?', a: 'שבר', b: 'paal', x: 'נשבר', xb: 'nifal', en: 'Who broke the window?' },
+  { r: 'ש-ב-ר', s: 'הכוס ___ כשהיא נפלה.', a: 'נשברה', b: 'nifal', x: 'שברה', xb: 'paal', en: 'The glass broke when it fell.' },
+  { r: 'פ-ג-ש', s: 'אתמול ___ את המורה שלי ברחוב.', a: 'פגשתי', b: 'paal', x: 'נפגשתי', xb: 'nifal', en: 'Yesterday I ran into my teacher on the street.' },
+  { r: 'פ-ג-ש', s: 'אנחנו ___ כל שבוע לקפה.', a: 'נפגשים', b: 'nifal', x: 'פוגשים', xb: 'paal', en: 'We meet up for coffee every week.' },
+  { r: 'ג-מ-ר', s: 'החופש ___ מהר מדי.', a: 'נגמר', b: 'nifal', x: 'גמר', xb: 'paal', en: 'The vacation ended too fast.' },
+  { r: 'ג-מ-ר', s: 'עוד לא ___ את העבודה.', a: 'גמרתי', b: 'paal', x: 'נגמרתי', xb: 'nifal', en: "I haven't finished the work yet." },
+  { r: 'ס-פ-ר', s: 'הוא ___ לי בדיחה מצחיקה.', a: 'סיפר', b: 'piel', x: 'הסתפר', xb: 'hitpael', en: 'He told me a funny joke.' },
+  { r: 'ס-פ-ר', s: 'אני צריך ___, השיער שלי ארוך מדי.', a: 'להסתפר', b: 'hitpael', x: 'לספר', xb: 'piel', en: 'I need a haircut, my hair is too long.' },
+  { r: 'ק-ב-ל', s: '___ את החבילה?', a: 'קיבלת', b: 'piel', x: 'התקבלת', xb: 'hitpael', en: 'Did you get the package?' },
+  { r: 'ק-ב-ל', s: 'היא ___ ללימודי רפואה.', a: 'התקבלה', b: 'hitpael', x: 'קיבלה', xb: 'piel', en: 'She got accepted to medical school.' },
+  { r: 'ס-ד-ר', s: 'אל תדאג, זה ___.', a: 'יסתדר', b: 'hitpael', x: 'יסדר', xb: 'piel', en: "Don't worry, it'll work out." },
+  { r: 'ס-ד-ר', s: 'מי ___ את הספרים על המדף?', a: 'סידר', b: 'piel', x: 'הסתדר', xb: 'hitpael', en: 'Who arranged the books on the shelf?' },
+  { r: 'פ-ט-ר', s: 'הבוס ___ אותו בלי סיבה.', a: 'פיטר', b: 'piel', x: 'התפטר', xb: 'hitpael', en: 'The boss fired him for no reason.' },
+  { r: 'פ-ט-ר', s: 'נמאס לה, אז היא ___.', a: 'התפטרה', b: 'hitpael', x: 'פיטרה', xb: 'piel', en: 'She was fed up, so she quit.' }
+);
+
+/* ---------- 20 more verbs ---------- */
+[
+  { root: 'ג-נ-ב', b: 'paal', e: 'steal' },
+  { root: 'מ-כ-ר', b: 'paal', e: 'sell' },
+  { root: 'ר-ק-ד', b: 'paal', e: 'dance' },
+  { root: 'ק-פ-צ', b: 'paal', e: 'jump; drop by' },
+  { root: 'ש-פ-כ', b: 'paal', e: 'spill, pour' },
+  { root: 'ב-ט-ל', b: 'piel', e: 'cancel' },
+  { root: 'ב-ש-ל', b: 'piel', e: 'cook' },
+  { root: 'צ-ל-מ', b: 'piel', e: 'photograph, take a picture' },
+  { root: 'ט-פ-ל', b: 'piel', e: 'take care of, deal with' },
+  { root: 'ז-כ-ר', b: 'hifil', e: 'remind' },
+  { root: 'פ-ס-ד', b: 'hifil', e: 'lose (a game); miss out' },
+  { root: 'ס-ת-ר', b: 'hifil', e: 'hide (something)' },
+  { root: 'ש-ל-מ', b: 'hifil', e: 'complete; catch up on' },
+  { root: 'ק-ד-מ', b: 'hitpael', e: 'make progress, move forward' },
+  { root: 'ס-ת-ר', b: 'hitpael', e: 'hide (yourself)' },
+  { root: 'ר-ג-ל', b: 'hitpael', e: 'get used to' },
+  { root: 'ש-פ-ר', b: 'hitpael', e: 'improve, get better' },
+  { root: 'מ-כ-ר', b: 'nifal', e: 'be sold' },
+  { root: 'ש-פ-כ', b: 'nifal', e: 'spill, get spilled' },
+  { root: 'ז-כ-ר', b: 'nifal', e: 'suddenly remember, recall' }
+].forEach((v) => VERBS.push(Object.assign(v, { id: VERBS.length, forms: conjugate(v.root, v.b, v.o) })));
+Object.assign(MEANING, {
+  'ז-כ-ר|paal': 'remember', 'ז-כ-ר|hifil': 'remind', 'ז-כ-ר|nifal': 'suddenly remember, recall',
+  'ס-ת-ר|hifil': 'hide (something)', 'ס-ת-ר|hitpael': 'hide (yourself)',
+  'מ-כ-ר|paal': 'sell', 'מ-כ-ר|nifal': 'be sold',
+  'ש-פ-כ|paal': 'spill, pour (something)', 'ש-פ-כ|nifal': 'get spilled',
+  'ש-ל-מ|piel': 'pay', 'ש-ל-מ|hifil': 'complete, catch up on'
+});
+SIBS.push(
+  { r: 'ז-כ-ר', s: '___ לי לקנות לחם בדרך הביתה.', a: 'תזכיר', b: 'hifil', x: 'תזכור', xb: 'paal', en: 'Remind me to buy bread on the way home.' },
+  { r: 'ז-כ-ר', s: 'פתאום ___ ששכחתי את הטלפון במונית.', a: 'נזכרתי', b: 'nifal', x: 'הזכרתי', xb: 'hifil', en: 'Suddenly I remembered I left my phone in the taxi.' },
+  { r: 'ז-כ-ר', s: 'אתה ___ איך קוראים לה?', a: 'זוכר', b: 'paal', x: 'מזכיר', xb: 'hifil', en: 'Do you remember her name?' },
+  { r: 'ס-ת-ר', s: 'הילדים ___ מאחורי הדלת.', a: 'מסתתרים', b: 'hitpael', x: 'מסתירים', xb: 'hifil', en: 'The kids are hiding behind the door.' },
+  { r: 'ס-ת-ר', s: 'היא ___ את העוגה עד שהאורחים הגיעו.', a: 'הסתירה', b: 'hifil', x: 'הסתתרה', xb: 'hitpael', en: 'She hid the cake until the guests arrived.' },
+  { r: 'מ-כ-ר', s: 'כל הכרטיסים ___ תוך שעה.', a: 'נמכרו', b: 'nifal', x: 'מכרו', xb: 'paal', en: 'All the tickets sold out within an hour.' },
+  { r: 'מ-כ-ר', s: '___ את הדירה שלנו לזוג צעיר.', a: 'מכרנו', b: 'paal', x: 'נמכרנו', xb: 'nifal', en: 'We sold our apartment to a young couple.' },
+  { r: 'ש-פ-כ', s: 'מי ___ מים על הרצפה?', a: 'שפך', b: 'paal', x: 'נשפך', xb: 'nifal', en: 'Who spilled water on the floor?' },
+  { r: 'ש-פ-כ', s: 'הקפה ___ על המחשב כשהכוס נפלה.', a: 'נשפך', b: 'nifal', x: 'שפך', xb: 'paal', en: 'The coffee spilled on the computer when the cup fell.' },
+  { r: 'ש-ל-מ', s: 'כבר ___ על הקפה, אפשר ללכת.', a: 'שילמתי', b: 'piel', x: 'השלמתי', xb: 'hifil', en: "I already paid for the coffee, we can go." },
+  { r: 'ש-ל-מ', s: 'אני צריך ___ את החומר שפספסתי בשיעור.', a: 'להשלים', b: 'hifil', x: 'לשלם', xb: 'piel', en: 'I need to catch up on the material I missed in class.' }
+);
+
+/* ---------- Hints for a given slot ---------- */
+const PAST_END = { 'אני': '־תי', 'אתה': '־ת', 'את': '־ת', 'הוא': 'no ending', 'היא': '־ה', 'אנחנו': '־נו', 'אתם': '־תם', 'הם': '־ו' };
+const FUT_PRE = { 'אני': 'א־', 'אתה': 'ת־', 'את': 'ת־ …־י', 'הוא': 'י־', 'היא': 'ת־', 'אנחנו': 'נ־', 'אתם': 'ת־ …־ו', 'הם': 'י־ …־ו' };
+function slotHint(v, tense, person) {
+  if (tense === 'past') return `Past, ${person}: ending ${PAST_END[person]}.`;
+  if (tense === 'fut') return `Future, ${person}: ${FUT_PRE[person]}.`;
+  const pe = { 'הוא': 'base form', 'היא': v.b === 'hifil' ? 'ending ־ה' : 'ending ־ת', 'הם': 'ending ־ים', 'הן': 'ending ־ות' };
+  return `Present, ${person}: ${pe[person]}. Present ${v.b === 'nifal' ? 'starts with נ' : (v.b === 'paal' ? 'has ו after the first root letter' : 'starts with מ')} in ${BINYAN[v.b].en}.`;
+}
+
+/* ---------- Storage (this browser only) ---------- */
+const KEY = 'binyan-builder-v0';
+const PAUSE_MS = 30000;
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) { s.settings = s.settings || { thinkFirst: true }; if (!s.settings.tfReset) { s.settings.thinkFirst = true; s.settings.tfReset = true; } return s; } } catch (e) {}
+  return { log: [], stats: {}, settings: { thinkFirst: true, tfReset: true } };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } }
+let state = load();
+
+function record(entry) {
+  entry.paused = entry.ms >= PAUSE_MS;
+  entry.thinkFirst = state.settings.thinkFirst;
+  state.log.push(Object.assign({ at: new Date().toISOString() }, entry));
+  const s = state.stats[entry.key] || (state.stats[entry.key] = { n: 0, right: 0, recent: [] });
+  s.n++; if (entry.correct) s.right++;
+  s.recent.push({ ok: entry.correct, ms: entry.paused ? null : entry.ms });
+  if (s.recent.length > 4) s.recent.shift();
+  save();
+}
+function weight(key) {
+  const s = state.stats[key];
+  if (!s) return 3;
+  const last = s.recent.slice(-2);
+  const misses = s.recent.filter((r) => !r.ok).length;
+  const fast = last.length === 2 && last.every((r) => r.ok && r.ms !== null && r.ms < 2500);
+  if (fast) return 0.3;
+  return 1 + misses * 2 + (last.some((r) => r.ms !== null && r.ms > 4000) ? 1 : 0);
+}
+function pickWeighted(items, wfn) {
+  const ws = items.map(wfn); const total = ws.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) { r -= ws[i]; if (r <= 0) return items[i]; }
+  return items[items.length - 1];
+}
+const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rootLabel = (r) => r.replace(/[כמנפצ]$/, (ch) => SOFIT[ch]);
+const secs = (ms) => (ms / 1000).toFixed(1) + ' s';
+
+/* ---------- Think-first setting (lives in the Progress tab) ---------- */
+function thinkFirstHtml() {
+  return `<div class="settings"><h3>Settings</h3>
+    <label class="toggle" for="think-first"><input type="checkbox" id="think-first" ${state.settings.thinkFirst ? 'checked' : ''}> Think of the answer before seeing the choices (recommended)</label></div>`;
+}
+function wireThinkFirst() {
+  const tf = document.getElementById('think-first');
+  if (tf) tf.addEventListener('change', () => { state.settings.thinkFirst = tf.checked; save(); restartAll(); });
+}
+
+/* ---------- Shared question flow ----------
+   q = { key, options[], answer, promptHtml, onAnswer(correct, chosen, ms, msPick) }
+   With think-first on, options stay hidden until "I have it"; the timer stops there. */
+function runQuestion(host, q) {
+  const think = state.settings.thinkFirst;
+  host.innerHTML = q.headerHtml + q.promptHtml + `
+    ${think ? '<div><button class="btn primary" type="button" id="reveal">I have it — show choices</button> <span class="note-inline">Say the form to yourself first. Shortcut: Enter.</span></div>' : ''}
+    <div class="options ${q.optionsClass || ''}" id="options" ${think ? 'hidden' : ''}>${q.options.map((o, i) => `<button class="opt" type="button" id="opt-${i}" data-f="${o}" lang="he">${o}</button>`).join('')}</div>
+    <div id="feedback"></div>
+    <div class="cmt-row"><button class="cmt-link" type="button" id="cmt-q">Comment on this question</button></div>`;
+  const t0 = performance.now();
+  const qctx = { answer: q.answer, options: q.options, chosen: null };
+  host.querySelector('#cmt-q').addEventListener('click', () => {
+    const pr = host.querySelector('.sentence, .prompt-line, .from-to, .anchor');
+    const quote = [...host.querySelectorAll('.anchor .inf, .chips, .prompt-line, .from-to, .sentence:not(.small)')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' · ') || (pr ? pr.textContent.trim() : '');
+    openComment({ title: 'A comment on this question', quote, context: `${quote}\nChoices: ${qctx.options.join(' / ')}\nRight answer: ${qctx.answer}${qctx.chosen ? '\nChose: ' + qctx.chosen : ''}` });
+  });
+  let tThink = null, done = false;
+  const optsEl = host.querySelector('#options');
+  const reveal = () => { if (tThink !== null) return; tThink = performance.now() - t0; optsEl.hidden = false; const rb = host.querySelector('#reveal'); if (rb) rb.parentElement.remove(); };
+  if (think) { const rb = host.querySelector('#reveal'); rb.addEventListener('click', reveal); rb.focus(); }
+  else tThink = 0;
+  host._keyHandler = (e) => {
+    if (e.key === 'Enter' && think && tThink === null) { e.preventDefault(); reveal(); }
+    else if (e.key === 'Enter' && done) { e.preventDefault(); const n = host.querySelector('#next'); if (n) n.click(); }
+  };
+  host.querySelectorAll('.opt').forEach((b) => b.addEventListener('click', () => {
+    if (done) return; done = true;
+    const total = performance.now() - t0;
+    const ms = Math.round(think ? tThink : total);
+    const msPick = Math.round(total - (think ? tThink : 0));
+    const chosen = b.dataset.f, correct = chosen === q.answer;
+    qctx.chosen = chosen;
+    host.querySelectorAll('.opt').forEach((o) => { o.disabled = true; if (o.dataset.f === q.answer) o.classList.add('right'); else if (o === b) o.classList.add('wrong'); });
+    const fb = host.querySelector('#feedback');
+    fb.className = 'feedback';
+    const paused = ms >= PAUSE_MS;
+    fb.innerHTML = `
+      <div class="verdict ${correct ? 'good' : 'bad'}">${correct ? 'Right' : 'Not quite'} · ${think ? 'thinking ' : ''}${paused ? 'over 30 s, not counted for speed' : secs(ms)}</div>
+      ${q.feedbackHtml(correct)}
+      <div><button class="btn primary" type="button" id="next">Next</button></div>`;
+    q.onAnswer(correct, chosen, ms, msPick);
+    host.querySelector('#next').addEventListener('click', q.next);
+    host.querySelector('#next').focus();
+  }));
+}
+document.addEventListener('keydown', (e) => {
+  if (document.querySelector('.modal-back')) { if (e.key === 'Escape') closeComment(); return; }
+  const v = document.querySelector('section.card:not([hidden])');
+  if (v && v._keyHandler) v._keyHandler(e);
+});
+
+/* ---------- Slots and options for form drills ---------- */
+const ROUND = 20;
+const ROOTS = [...new Set(VERBS.map((v) => v.root))];
+const TENSE_KEYS = ['past', 'pres', 'fut'];
+const personsOf = (t) => (t === 'pres' ? PRESENT : PERSONS);
+function allSlots(filter) {
+  const out = [];
+  VERBS.filter((v) => filter === 'all' || v.root === filter).forEach((v) => {
+    TENSE_KEYS.forEach((t) => personsOf(t).forEach((p) => out.push({ v, tense: t, person: p })));
+  });
+  return out;
+}
+const slotKey = (s) => `${s.v.forms.inf}|${s.tense}|${s.person}`;
+const formOf = (v, tense, person) => v.forms[tense][person];
+function makeOptions(slot) {
+  const answer = formOf(slot.v, slot.tense, slot.person);
+  const v = slot.v;
+  const sameTense = personsOf(slot.tense).filter((p) => p !== slot.person).map((p) => formOf(v, slot.tense, p));
+  const samePerson = TENSE_KEYS.filter((t) => t !== slot.tense).map((t) => formOf(v, t, personsOf(t).includes(slot.person) ? slot.person : 'הוא'));
+  const otherBinyan = VERBS.filter((o) => o.root === v.root && o.b !== v.b).map((o) => formOf(o, slot.tense, slot.person));
+  const any = TENSE_KEYS.flatMap((t) => Object.values(v.forms[t]));
+  const chosen = new Set([answer]);
+  const take = (list) => { for (const f of shuffle(list)) { if (!chosen.has(f)) { chosen.add(f); return; } } };
+  take(sameTense); take(otherBinyan.length ? otherBinyan : samePerson); take(samePerson);
+  while (chosen.size < 4) { const before = chosen.size; take(any); if (chosen.size === before) break; }
+  return { answer, options: shuffle([...chosen]) };
+}
+const familySelect = (id, current) => `<div class="row"><label class="small" for="${id}">Root family</label><select id="${id}"><option value="all">All roots, mixed</option>${ROOTS.map((r) => `<option value="${r}" ${r === current ? 'selected' : ''}>${rootLabel(r)}</option>`).join('')}</select></div>`;
+function missedTable(rows) {
+  if (!rows.length) return '<p class="note">No misses. Forms you answered quickly will now come up less often.</p>';
+  return `<div class="table-wrap"><table><thead><tr><th>Asked</th><th>Right</th><th>You chose</th></tr></thead><tbody>${rows.map((m) => `<tr><td lang="he" dir="rtl">${m.asked}</td><td class="he">${m.answer}</td><td class="he">${m.chosen}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function roundDone(host, sess, mode, again) {
+  const rts = sess.items.filter((x) => x.correct && x.ms < PAUSE_MS).map((x) => x.ms).sort((a, b) => a - b);
+  const med = rts.length ? secs(rts[Math.floor(rts.length / 2)]) : '—';
+  const missed = sess.items.filter((x) => !x.correct);
+  host._keyHandler = null;
+  host.innerHTML = `
+    <div class="eyebrow">Round done</div>
+    <div class="summary">
+      <div><b>${sess.right}/${ROUND}</b><span>right</span></div>
+      <div><b>${med}</b><span>median ${state.settings.thinkFirst ? 'thinking ' : ''}time, when right</span></div>
+      <div><b>${missed.length}</b><span>to review</span></div>
+    </div>
+    ${missedTable(missed)}
+    <div><button class="btn primary" type="button" id="again">Start another round</button></div>`;
+  host.querySelector('#again').addEventListener('click', again);
+}
+
+/* ---------- Rounds: no repeats within a round; misses come back at the end ---------- */
+function newSess(extra) { return Object.assign({ n: 0, fresh: 0, right: 0, items: [], seen: new Set(), retry: [], last: null }, extra); }
+const sessDone = (s, total) => s.fresh >= total && !s.retry.length;
+function sessPick(s, total, items, keyFn, wfn) {
+  if (s.fresh >= total) return { it: s.retry.shift(), review: true };
+  let pool = items.filter((x) => !s.seen.has(keyFn(x)) && !s.retry.some((r) => keyFn(r) === keyFn(x)));
+  if (!pool.length) pool = items.filter((x) => keyFn(x) !== s.last);
+  if (!pool.length) pool = items;
+  return { it: pickWeighted(pool, wfn), review: false };
+}
+function sessRecord(s, key, it, review, correct, item) {
+  s.n++; s.seen.add(key); s.last = key;
+  if (review) return;
+  s.fresh++; if (correct) s.right++; else s.retry.push(it);
+  s.items.push(item);
+}
+const sessCounter = (s, total, review) => review
+  ? `<span class="counter">Again: one you missed earlier · ${s.retry.length} more after this</span>`
+  : `<span class="counter">${s.fresh + 1} / ${total} · ${s.right} right</span>`;
+
+/* ---------- Build the form ---------- */
+let build = newSess({ family: 'all' });
+function renderBuild() {
+  const host = document.getElementById('view-build');
+  if (sessDone(build, ROUND)) return roundDone(host, build, 'build', () => { build = newSess({ family: build.family }); renderBuild(); });
+  const { it: slot, review } = sessPick(build, ROUND, allSlots(build.family), slotKey, (s) => weight(slotKey(s)));
+  const { answer, options } = makeOptions(slot);
+  const v = slot.v;
+  runQuestion(host, {
+    answer, options,
+    headerHtml: `<div class="row between">${familySelect('family-build', build.family)}${sessCounter(build, ROUND, review)}</div>`,
+    promptHtml: `
+      <div class="anchor"><span class="inf" lang="he">${v.p}</span>${hearBtn(v.p, v.forms.inf, 'Hear')}<button class="btn small" type="button" data-act="reveal-meaning" data-form="${v.forms.inf}">English</button><span class="meaning" hidden>${v.e}</span></div>
+      <div class="chips"><span class="chip root">${rootLabel(v.root)}</span><span class="chip">${BINYAN[v.b].he}</span></div>
+      <div class="prompt-line" lang="he"><span>${TENSES[slot.tense]}</span><span>·</span><span>${slot.person}</span><span class="q">= ?</span></div>`,
+    feedbackHtml: () => `<p class="note">${slotHint(v, slot.tense, slot.person)}</p>${wordCard(v, slot.tense, slot.person)}`,
+    onAnswer: (correct, chosen, ms, msPick) => {
+      sessRecord(build, slotKey(slot), slot, review, correct, { correct, ms, chosen, answer, asked: `${v.forms.inf} · ${TENSES[slot.tense]} · ${slot.person}` });
+      record({ mode: 'build', key: slotKey(slot), inf: v.forms.inf, root: v.root, binyan: v.b, tense: slot.tense, person: slot.person, chosen, answer, correct, ms, msPick });
+    },
+    next: renderBuild
+  });
+  host.querySelector('#family-build').addEventListener('change', (e) => { build = newSess({ family: e.target.value }); renderBuild(); });
+}
+
+/* ---------- Transform: from one conjugated form to another ---------- */
+let tr = newSess({ family: 'all' });
+function renderTransform() {
+  const host = document.getElementById('view-transform');
+  if (sessDone(tr, ROUND)) return roundDone(host, tr, 'transform', () => { tr = newSess({ family: tr.family }); renderTransform(); });
+  const { it: target, review } = sessPick(tr, ROUND, allSlots(tr.family), slotKey, (s) => weight('tr|' + slotKey(s)));
+  const v = target.v;
+  const srcTense = shuffle(TENSE_KEYS.filter((t) => t !== target.tense))[0];
+  const srcPerson = shuffle(personsOf(srcTense))[0];
+  const src = formOf(v, srcTense, srcPerson);
+  const { answer, options } = makeOptions(target);
+  runQuestion(host, {
+    answer, options,
+    headerHtml: `<div class="row between">${familySelect('family-tr', tr.family)}${sessCounter(tr, ROUND, review)}</div>`,
+    promptHtml: `
+      <p class="note">Change the form. The binyan stays the same.</p>
+      <div class="from-to" lang="he" dir="rtl">
+        <div><span class="small-he">${TENSES[srcTense]}</span><span class="inf">${srcPerson} ${vocalize(v.root, v.b, srcTense, srcPerson, v.o)}</span><span>${hearBtn(vocalize(v.root, v.b, srcTense, srcPerson, v.o), src, 'Hear')}</span></div>
+        <div class="arrow" aria-hidden="true">←</div>
+        <div><span class="small-he">${TENSES[target.tense]}</span><span class="inf">${target.person} <span class="q">?</span></span></div>
+      </div>`,
+    feedbackHtml: (ok) => `
+      <div class="row" style="gap:12px"><span class="he">${v.p}</span><span class="chip root">${rootLabel(v.root)}</span><span class="chip">${BINYAN[v.b].he}</span><span class="meaning">${v.e}</span></div>
+      <p class="note">${slotHint(v, target.tense, target.person)}</p>
+      ${wordCard(v, target.tense, target.person)}`,
+    onAnswer: (correct, chosen, ms, msPick) => {
+      sessRecord(tr, slotKey(target), target, review, correct, { correct, ms, chosen, answer, asked: `${srcPerson} ${src} → ${TENSES[target.tense]} · ${target.person}` });
+      record({ mode: 'transform', key: 'tr|' + slotKey(target), inf: v.forms.inf, root: v.root, binyan: v.b, from: src, fromTense: srcTense, fromPerson: srcPerson, tense: target.tense, person: target.person, chosen, answer, correct, ms, msPick });
+    },
+    next: renderTransform
+  });
+  host.querySelector('#family-tr').addEventListener('change', (e) => { tr = newSess({ family: e.target.value }); renderTransform(); });
+}
+
+/* ---------- Sibling verbs in a sentence ---------- */
+let sib = newSess();
+function renderSiblings() {
+  const host = document.getElementById('view-siblings');
+  if (sessDone(sib, ROUND)) return roundDone(host, sib, 'siblings', () => { sib = newSess(); renderSiblings(); });
+  const { it, review } = sessPick(sib, ROUND, SIBS, (s) => s.s, (s) => weight('sib|' + s.s));
+  const sentence = it.s.replace('___', '<span class="blank">_____</span>');
+  const filled = (w) => it.s.replace('___', `<b>${w}</b>`);
+  runQuestion(host, {
+    answer: it.a, options: shuffle([it.a, it.x]), optionsClass: 'two',
+    headerHtml: `<div class="row between"><span class="note">Same root, different binyan. Which one fits the meaning?</span>${sessCounter(sib, ROUND, review)}</div>`,
+    promptHtml: `
+      <div class="chips"><span class="chip root">${rootLabel(it.r)}</span></div>
+      <div class="sentence" lang="he" dir="rtl">${sentence}</div>`,
+    feedbackHtml: () => `
+      <div class="sentence small" lang="he" dir="rtl">${filled(it.a)}</div>
+      <div>${hearBtn(it.s.replace('___', it.a), it.a, 'Hear the sentence')}</div>
+      <details class="en-reveal"><summary>English</summary><p class="note">${it.en}</p></details>
+      <div class="pair-grid">
+        <div><span class="he">${pointFor(it.r, it.b, it.a)}</span><span class="chip">${BINYAN[it.b].he}</span><span class="meaning">${MEANING[it.r + '|' + it.b]}</span>${hearBtn(pointFor(it.r, it.b, it.a), it.a, 'Hear')}</div>
+        <div><span class="he">${pointFor(it.r, it.xb, it.x)}</span><span class="chip">${BINYAN[it.xb].he}</span><span class="meaning">${MEANING[it.r + '|' + it.xb]}</span>${hearBtn(pointFor(it.r, it.xb, it.x), it.x, 'Hear')}</div>
+      </div>`,
+    onAnswer: (correct, chosen, ms, msPick) => {
+      sessRecord(sib, it.s, it, review, correct, { correct, ms, chosen, answer: it.a, asked: it.s });
+      record({ mode: 'siblings', key: 'sib|' + it.s, sentence: it.s, root: it.r, binyan: it.b, siblingBinyan: it.xb, chosen, answer: it.a, correct, ms, msPick });
+    },
+    next: renderSiblings
+  });
+}
+
+/* ---------- Vowel-pointed forms (for pronunciation) ---------- */
+const NQ = { Q: 'ָ', P: 'ַ', T: 'ֵ', S: 'ֶ', H: 'ִ', O: 'ֹ', V: 'ְ', HP: 'ֲ', DG: 'ּ', SH: 'ׁ' };
+const BGDKPT = 'בגדכפת';
+const GUTT = 'אהחע';
+// one letter with its marks: d = 'lene' (only for בגדכפת) | 'forte' | null; v = vowel; end = word-final (use final form)
+function L(ch, d, v, end) {
+  const base = end && SOFIT[ch] ? SOFIT[ch] : ch;
+  const dg = d === 'forte' || (d === 'lene' && BGDKPT.includes(ch)) ? NQ.DG : '';
+  return base + (ch === 'ש' ? NQ.SH : '') + dg + (v || (end && ch === 'כ' ? NQ.V : ''));
+}
+const SHURUK = 'ו' + NQ.DG, HOLAM = 'ו' + NQ.O;
+// suffixes after a closed third root letter (which carries shva)
+const PAST_CLOSED = {
+  'אני': 'ת' + NQ.DG + NQ.H + 'י',
+  'אתה': 'ת' + NQ.DG + NQ.Q,
+  'את': 'ת' + NQ.DG + NQ.V,
+  'אנחנו': 'נ' + SHURUK,
+  'אתם': 'ת' + NQ.DG + NQ.S + 'ם'
+};
+const FUT_PREFIX = {
+  // [letter, vowel for pa'al/nif'al/hitpa'el-type, vowel for pi'el, vowel for hif'il]
+  'אני': 'א', 'אתה': 'ת', 'את': 'ת', 'הוא': 'י', 'היא': 'ת', 'אנחנו': 'נ', 'אתם': 'ת', 'הם': 'י'
+};
+function pre(person, v) { const c = FUT_PREFIX[person]; return L(c, 'lene', v); }
+
+function vocalize(root, binyan, tense, person, opts) {
+  const out = vocalizeRaw(root, binyan, tense, person, opts);
+  if (out && tense === 'past' && person === 'אנחנו' && root.endsWith('נ')) return out.replace('נ' + NQ.V + 'נ' + SHURUK, 'נ' + NQ.DG + SHURUK);
+  return out;
+}
+function vocalizeRaw(root, binyan, tense, person, opts) {
+  opts = opts || {};
+  const [a, b, c] = root.split('-');
+  const closed = ['אני', 'אתה', 'את', 'אנחנו', 'אתם'].includes(person);
+  const futEndI = person === 'את', futEndU = person === 'אתם' || person === 'הם';
+  const firstFut = person === 'אני';
+  if (binyan === 'paal') {
+    if (tense === 'past') {
+      if (closed) return L(a, 'lene', NQ.Q) + L(b, null, NQ.P) + L(c, null, NQ.V) + PAST_CLOSED[person];
+      if (person === 'הוא') return L(a, 'lene', NQ.Q) + L(b, null, NQ.P) + L(c, null, '', true);
+      if (person === 'היא') return L(a, 'lene', NQ.Q) + L(b, null, NQ.V) + L(c, null, NQ.Q) + 'ה';
+      if (person === 'הם') return L(a, 'lene', NQ.Q) + L(b, null, NQ.V) + L(c, null, '') + SHURUK;
+    }
+    if (tense === 'pres') {
+      const st = L(a, 'lene', '') + HOLAM;
+      if (person === 'הוא') return st + L(b, null, NQ.T) + L(c, null, '', true);
+      if (person === 'היא') return st + L(b, null, NQ.S) + L(c, null, NQ.S) + 'ת';
+      if (person === 'הם') return st + L(b, null, NQ.V) + L(c, null, NQ.H) + 'ים';
+      if (person === 'הן') return st + L(b, null, NQ.V) + L(c, null, '') + HOLAM + 'ת';
+    }
+    if (tense === 'fut') {
+      const p = pre(person, firstFut ? NQ.S : NQ.H);
+      if (futEndI) return p + L(a, null, NQ.V) + L(b, 'lene', NQ.V) + L(c, null, NQ.H) + 'י';
+      if (futEndU) return p + L(a, null, NQ.V) + L(b, 'lene', NQ.V) + L(c, null, '') + SHURUK;
+      if (opts.futA) return p + L(a, null, NQ.V) + L(b, 'lene', NQ.P) + L(c, null, '', true);
+      return p + L(a, null, NQ.V) + L(b, 'lene', '') + HOLAM + L(c, null, '', true);
+    }
+    if (tense === 'inf') return 'ל' + NQ.H + L(a, null, NQ.V) + L(b, 'lene', '') + HOLAM + L(c, null, '', true);
+  }
+  if (binyan === 'piel') {
+    if (tense === 'past') {
+      const st = L(a, 'lene', NQ.H) + 'י';
+      if (closed) return st + L(b, 'forte', NQ.P) + L(c, null, NQ.V) + PAST_CLOSED[person];
+      if (person === 'הוא') return st + L(b, 'forte', NQ.T) + L(c, null, '', true);
+      if (person === 'היא') return st + L(b, 'forte', NQ.V) + L(c, null, NQ.Q) + 'ה';
+      if (person === 'הם') return st + L(b, 'forte', NQ.V) + L(c, null, '') + SHURUK;
+    }
+    const stem = (end) => {
+      if (end === 'i') return L(a, null, NQ.P) + L(b, 'forte', NQ.V) + L(c, null, NQ.H) + 'י';
+      if (end === 'u') return L(a, null, NQ.P) + L(b, 'forte', NQ.V) + L(c, null, '') + SHURUK;
+      return L(a, null, NQ.P) + L(b, 'forte', NQ.T) + L(c, null, '', true);
+    };
+    if (tense === 'pres') {
+      const m = 'מ' + NQ.V;
+      if (person === 'הוא') return m + stem();
+      if (person === 'היא') return m + L(a, null, NQ.P) + L(b, 'forte', NQ.S) + L(c, null, NQ.S) + 'ת';
+      if (person === 'הם') return m + L(a, null, NQ.P) + L(b, 'forte', NQ.V) + L(c, null, NQ.H) + 'ים';
+      if (person === 'הן') return m + L(a, null, NQ.P) + L(b, 'forte', NQ.V) + L(c, null, '') + HOLAM + 'ת';
+    }
+    if (tense === 'fut') {
+      const p = pre(person, firstFut ? NQ.HP : NQ.V);
+      return p + stem(futEndI ? 'i' : futEndU ? 'u' : '');
+    }
+    if (tense === 'inf') return 'ל' + NQ.V + stem();
+  }
+  if (binyan === 'hifil') {
+    const gut = GUTT.includes(a);
+    const hi = (end) => {
+      const s = L(a, null, NQ.V) + L(b, 'lene', NQ.H) + 'י';
+      if (end === 'a') return s + L(c, null, NQ.Q) + 'ה';
+      if (end === 'i') return s + L(c, null, NQ.H) + 'י';
+      if (end === 'u') return s + L(c, null, '') + SHURUK;
+      if (end === 'im') return s + L(c, null, NQ.H) + 'ים';
+      if (end === 'ot') return s + L(c, null, '') + HOLAM + 'ת';
+      return s + L(c, null, '', true);
+    };
+    if (tense === 'past') {
+      const h = 'ה' + (gut ? NQ.S : NQ.H);
+      if (closed) return h + L(a, null, NQ.V) + L(b, 'lene', NQ.P) + L(c, null, NQ.V) + PAST_CLOSED[person];
+      return h + hi(person === 'היא' ? 'a' : person === 'הם' ? 'u' : '');
+    }
+    if (tense === 'pres') return 'מ' + NQ.P + hi({ 'הוא': '', 'היא': 'a', 'הם': 'im', 'הן': 'ot' }[person]);
+    if (tense === 'fut') return pre(person, NQ.P) + hi(futEndI ? 'i' : futEndU ? 'u' : '');
+    if (tense === 'inf') return 'ל' + NQ.V + 'ה' + NQ.P + hi('');
+  }
+  if (binyan === 'hitpael') {
+    // the ת of hitpa'el, with metathesis after ס/ש (and ט after צ, ד after ז)
+    let head;
+    if (a === 'ס' || a === 'ש') head = L(a, null, NQ.V) + L('ת', 'lene', NQ.P);
+    else if (a === 'צ') head = L(a, null, NQ.V) + L('ט', null, NQ.P);
+    else if (a === 'ז') head = L(a, null, NQ.V) + L('ד', 'lene', NQ.P);
+    else head = 'ת' + NQ.V + L(a, 'lene', NQ.P);
+    const tail = (end) => {
+      if (end === 'closed') return L(b, 'forte', NQ.P) + L(c, null, NQ.V);
+      if (end === 'a') return L(b, 'forte', NQ.V) + L(c, null, NQ.Q) + 'ה';
+      if (end === 'i') return L(b, 'forte', NQ.V) + L(c, null, NQ.H) + 'י';
+      if (end === 'u') return L(b, 'forte', NQ.V) + L(c, null, '') + SHURUK;
+      if (end === 'et') return L(b, 'forte', NQ.S) + L(c, null, NQ.S) + 'ת';
+      if (end === 'im') return L(b, 'forte', NQ.V) + L(c, null, NQ.H) + 'ים';
+      if (end === 'ot') return L(b, 'forte', NQ.V) + L(c, null, '') + HOLAM + 'ת';
+      return L(b, 'forte', NQ.T) + L(c, null, '', true);
+    };
+    if (tense === 'past') {
+      const h = 'ה' + NQ.H + head;
+      if (closed) return h + tail('closed') + PAST_CLOSED[person];
+      return h + tail(person === 'היא' ? 'a' : person === 'הם' ? 'u' : '');
+    }
+    if (tense === 'pres') return 'מ' + NQ.H + head + tail({ 'הוא': '', 'היא': 'et', 'הם': 'im', 'הן': 'ot' }[person]);
+    if (tense === 'fut') return pre(person, firstFut ? NQ.S : NQ.H) + head + tail(futEndI ? 'i' : futEndU ? 'u' : '');
+    if (tense === 'inf') return 'ל' + NQ.V + 'ה' + NQ.H + head + tail('');
+  }
+  if (binyan === 'nifal') {
+    const n = 'נ' + NQ.H + L(a, null, NQ.V);
+    if (tense === 'past') {
+      if (closed) return n + L(b, 'lene', NQ.P) + L(c, null, NQ.V) + PAST_CLOSED[person];
+      if (person === 'הוא') return n + L(b, 'lene', NQ.P) + L(c, null, '', true);
+      if (person === 'היא') return n + L(b, 'lene', NQ.V) + L(c, null, NQ.Q) + 'ה';
+      if (person === 'הם') return n + L(b, 'lene', NQ.V) + L(c, null, '') + SHURUK;
+    }
+    if (tense === 'pres') {
+      if (person === 'הוא') return n + L(b, 'lene', NQ.Q) + L(c, null, '', true);
+      if (person === 'היא') return n + L(b, 'lene', NQ.S) + L(c, null, NQ.S) + 'ת';
+      if (person === 'הם') return n + L(b, 'lene', NQ.Q) + L(c, null, NQ.H) + 'ים';
+      if (person === 'הן') return n + L(b, 'lene', NQ.Q) + L(c, null, '') + HOLAM + 'ת';
+    }
+    const body = (end) => {
+      const s = L(a, 'forte', NQ.Q);
+      if (end === 'i') return s + L(b, null, NQ.V) + L(c, null, NQ.H) + 'י';
+      if (end === 'u') return s + L(b, null, NQ.V) + L(c, null, '') + SHURUK;
+      return s + L(b, null, NQ.T) + L(c, null, '', true);
+    };
+    if (tense === 'fut') {
+      const end = futEndI ? 'i' : futEndU ? 'u' : '';
+      if (firstFut) return 'א' + NQ.S + body(end);
+      return pre(person, NQ.H) + 'י' + body(end);
+    }
+    if (tense === 'inf') return 'ל' + NQ.V + 'ה' + NQ.H + 'י' + body('');
+  }
+  return null;
+}
+const stripNiqqud = (s) => s.replace(/[֑-ׇ]/g, '');
+
+/* ---------- Example sentences: one per verb and tense; w = the verb form as it appears ---------- */
+const EXAMPLES = {
+  'לכתוב': {
+    past: { s: 'אתמול כתבתי לה הודעה ארוכה.', w: 'כתבתי', en: 'Yesterday I wrote her a long message.' },
+    pres: { s: 'היא כותבת ספר על המשפחה שלה.', w: 'כותבת', en: "She's writing a book about her family." },
+    fut: { s: 'אני אכתוב לך כשאגיע.', w: 'אכתוב', en: "I'll write to you when I get there." }
+  },
+  'להתכתב': {
+    past: { s: 'התכתבנו קצת אחרי הכנס.', w: 'התכתבנו', en: 'We messaged each other a bit after the conference.' },
+    pres: { s: 'הם מתכתבים כל ערב בוואטסאפ.', w: 'מתכתבים', en: 'They message each other on WhatsApp every evening.' },
+    fut: { s: 'נתכתב במייל, בסדר?', w: 'נתכתב', en: "We'll be in touch by email, okay?" }
+  },
+  'להכתיב': {
+    past: { s: 'המורה הכתיבה לנו את השאלות.', w: 'הכתיבה', en: 'The teacher dictated the questions to us.' },
+    pres: { s: 'הוא תמיד מכתיב לכולם מה לעשות.', w: 'מכתיב', en: 'He always tells everyone what to do.' },
+    fut: { s: 'הוא לא יכתיב לי מה לעשות.', w: 'יכתיב', en: "He's not going to dictate to me what to do." }
+  },
+  'להיכתב': {
+    past: { s: 'הספר נכתב לפני מאה שנה.', w: 'נכתב', en: 'The book was written a hundred years ago.' },
+    pres: { s: 'היום כמעט לא נכתבים מכתבים ביד.', w: 'נכתבים', en: 'Hardly any letters are written by hand nowadays.' },
+    fut: { s: 'השם שלך ייכתב על הכרטיס.', w: 'ייכתב', en: 'Your name will be written on the ticket.' }
+  },
+  'ללבוש': {
+    past: { s: 'מה לבשת לחתונה?', w: 'לבשת', en: 'What did you wear to the wedding?' },
+    pres: { s: 'היא לובשת שמלה אדומה.', w: 'לובשת', en: "She's wearing a red dress." },
+    fut: { s: 'אני אלבש את המעיל החדש.', w: 'אלבש', en: "I'll wear the new coat." }
+  },
+  'להתלבש': {
+    past: { s: 'התלבשתי מהר ויצאתי.', w: 'התלבשתי', en: 'I got dressed quickly and went out.' },
+    pres: { s: 'רגע, אני מתלבש ויוצא.', w: 'מתלבש', en: "One sec, I'm getting dressed and heading out." },
+    fut: { s: 'תתלבשי מהר, אנחנו מאחרים!', w: 'תתלבשי', en: "Get dressed quickly, we're late! (to a woman)" }
+  },
+  'להלביש': {
+    past: { s: 'הלבשנו את הילדים ויצאנו.', w: 'הלבשנו', en: 'We dressed the kids and went out.' },
+    pres: { s: 'אני מלביש את הקטנה ואז יוצאים.', w: 'מלביש', en: "I'm dressing the little one, then we're heading out." },
+    fut: { s: 'מי ילביש את התינוק?', w: 'ילביש', en: 'Who will dress the baby?' }
+  },
+  'ללמוד': {
+    past: { s: 'איפה למדת עברית?', w: 'למדת', en: 'Where did you learn Hebrew?' },
+    pres: { s: 'אני לומד למבחן כל הערב.', w: 'לומד', en: "I'm studying for the test all evening." },
+    fut: { s: 'בשנה הבאה היא תלמד באוניברסיטה.', w: 'תלמד', en: "Next year she'll study at university." }
+  },
+  'ללמד': {
+    past: { s: 'מי לימד אותך לנהוג?', w: 'לימד', en: 'Who taught you to drive?' },
+    pres: { s: 'היא מלמדת את הילדים לשחות.', w: 'מלמדת', en: 'She teaches the kids to swim.' },
+    fut: { s: 'אני אלמד אותך, זה לא קשה.', w: 'אלמד', en: "I'll teach you, it's not hard." }
+  },
+  'לגדל': {
+    past: { s: 'סבתא שלי גידלה שמונה ילדים.', w: 'גידלה', en: 'My grandmother raised eight children.' },
+    pres: { s: 'הם מגדלים עגבניות במרפסת.', w: 'מגדלים', en: 'They grow tomatoes on the balcony.' },
+    fut: { s: 'נגדל פה את הילדים שלנו.', w: 'נגדל', en: "We'll raise our kids here." }
+  },
+  'להגדיל': {
+    past: { s: 'הגדלתי את התמונה, עכשיו רואים טוב.', w: 'הגדלתי', en: 'I enlarged the picture; now you can see it well.' },
+    pres: { s: 'החברה מגדילה את הצוות.', w: 'מגדילה', en: 'The company is growing its team.' },
+    fut: { s: 'תגדיל את הכתב, אני לא רואה כלום.', w: 'תגדיל', en: "Make the text bigger, I can't see anything." }
+  },
+  'להיכנס': {
+    past: { s: 'הוא נכנס לחדר בלי לדפוק.', w: 'נכנס', en: 'He came into the room without knocking.' },
+    pres: { s: 'אני נכנס למקלחת, תשגיח על הילדים?', w: 'נכנס', en: "I'm getting in the shower, can you watch the kids?" },
+    fut: { s: 'ניכנס רק לחמש דקות.', w: 'ניכנס', en: "We'll go in for just five minutes." }
+  },
+  'להכניס': {
+    past: { s: 'הכנסת את החלב למקרר?', w: 'הכנסת', en: 'Did you put the milk in the fridge?' },
+    pres: { s: 'היא מכניסה את הקניות הביתה.', w: 'מכניסה', en: "She's bringing the groceries into the house." },
+    fut: { s: 'תכניס את החלב למקרר, בבקשה.', w: 'תכניס', en: 'Put the milk in the fridge, please.' }
+  },
+  'להרגיש': {
+    past: { s: 'הרגשתי משהו מוזר אתמול בלילה.', w: 'הרגשתי', en: 'I felt something strange last night.' },
+    pres: { s: 'אני לא מרגיש טוב היום.', w: 'מרגיש', en: "I don't feel well today." },
+    fut: { s: 'תשתה מים, תרגיש יותר טוב.', w: 'תרגיש', en: "Drink some water, you'll feel better." }
+  },
+  'להתרגש': {
+    past: { s: 'היא התרגשה עד דמעות.', w: 'התרגשה', en: 'She was moved to tears.' },
+    pres: { s: 'הילדים מתרגשים לקראת הטיול.', w: 'מתרגשים', en: 'The kids are excited about the trip.' },
+    fut: { s: 'אל תתרגש, הכול יהיה בסדר.', w: 'תתרגש', en: "Don't get worked up, it'll be fine." }
+  },
+  'לקשור': {
+    past: { s: 'קשרתי את הכלב בחוץ.', w: 'קשרתי', en: 'I tied the dog up outside.' },
+    pres: { s: 'הוא קושר את השרוכים לבד.', w: 'קושר', en: 'He ties his shoelaces by himself.' },
+    fut: { s: 'אני אקשור את זה חזק.', w: 'אקשור', en: "I'll tie it tight." }
+  },
+  'להתקשר': {
+    past: { s: 'התקשרת אליי? לא שמעתי.', w: 'התקשרת', en: "Did you call me? I didn't hear it." },
+    pres: { s: 'אני מתקשר אלייך עוד חמש דקות.', w: 'מתקשר', en: "I'll call you in five minutes. (to a woman)" },
+    fut: { s: 'תתקשרי כשאת מגיעה.', w: 'תתקשרי', en: 'Call when you get there. (to a woman)' }
+  },
+  'לדבר': {
+    past: { s: 'דיברנו על זה אתמול.', w: 'דיברנו', en: 'We talked about it yesterday.' },
+    pres: { s: 'היא מדברת מהר מדי.', w: 'מדברת', en: 'She talks too fast.' },
+    fut: { s: 'נדבר אחר כך.', w: 'נדבר', en: "We'll talk later." }
+  },
+  'לשלם': {
+    past: { s: 'כבר שילמתי, אל תדאג.', w: 'שילמתי', en: "I already paid, don't worry." },
+    pres: { s: 'כמה אתם משלמים על הדירה?', w: 'משלמים', en: 'How much are you paying for the apartment?' },
+    fut: { s: 'אני אשלם בכרטיס.', w: 'אשלם', en: "I'll pay by card." }
+  },
+  'לגמור': {
+    past: { s: 'גמרתם לאכול?', w: 'גמרתם', en: 'Are you done eating?' },
+    pres: { s: 'אני גומר לעבוד בחמש.', w: 'גומר', en: 'I finish work at five.' },
+    fut: { s: 'מתי תגמור?', w: 'תגמור', en: 'When will you be done?' }
+  },
+  'להסביר': {
+    past: { s: 'הוא הסביר לי את זה פעמיים.', w: 'הסביר', en: 'He explained it to me twice.' },
+    pres: { s: 'היא מסבירה ממש טוב.', w: 'מסבירה', en: 'She explains things really well.' },
+    fut: { s: 'אני אסביר לך אחר כך.', w: 'אסביר', en: "I'll explain it to you later." }
+  },
+  'להחליט': {
+    past: { s: 'החלטנו לעבור לירושלים.', w: 'החלטנו', en: 'We decided to move to Jerusalem.' },
+    pres: { s: 'היא תמיד מחליטה ברגע האחרון.', w: 'מחליטה', en: 'She always decides at the last minute.' },
+    fut: { s: 'תחליט מה אתה רוצה ותגיד לי.', w: 'תחליט', en: 'Decide what you want and tell me.' }
+  },
+  'להתחיל': {
+    past: { s: 'הסרט כבר התחיל.', w: 'התחיל', en: 'The movie already started.' },
+    pres: { s: 'אני מתחיל עבודה חדשה ביום ראשון.', w: 'מתחיל', en: "I'm starting a new job on Sunday." },
+    fut: { s: 'נתחיל בלעדיו, הוא מאחר.', w: 'נתחיל', en: "We'll start without him, he's late." }
+  },
+  'להשתמש': {
+    past: { s: 'השתמשתי במפה ועדיין הלכתי לאיבוד.', w: 'השתמשתי', en: 'I used the map and still got lost.' },
+    pres: { s: 'אתה משתמש בזה עכשיו?', w: 'משתמש', en: 'Are you using this right now?' },
+    fut: { s: 'תשתמש בכפית, לא בידיים.', w: 'תשתמש', en: 'Use a spoon, not your hands.' }
+  },
+  'להסתכל': {
+    past: { s: 'הסתכלתי מהחלון וראיתי אותו.', w: 'הסתכלתי', en: 'I looked out the window and saw him.' },
+    pres: { s: 'למה אתה מסתכל עליי ככה?', w: 'מסתכל', en: 'Why are you looking at me like that?' },
+    fut: { s: 'תסתכלי ימינה.', w: 'תסתכלי', en: 'Look to the right. (to a woman)' }
+  }
+};
+Object.assign(EXAMPLES, {
+  'לגנוב': { past: { s: 'מישהו גנב לי את האופניים מהחצר.', w: 'גנב', en: 'Someone stole my bike from the yard.' }, pres: { s: 'הוא גונב לי צ׳יפס מהצלחת כל פעם.', w: 'גונב', en: 'He steals fries off my plate every time.' }, fut: { s: 'אל תדאג, אף אחד לא יגנוב את זה.', w: 'יגנוב', en: "Don't worry, nobody will steal it." } },
+  'למכור': { past: { s: 'מכרנו את האוטו הישן בשבוע שעבר.', w: 'מכרנו', en: 'We sold the old car last week.' }, pres: { s: 'הם מוכרים ירקות בשוק ביום שישי.', w: 'מוכרים', en: 'They sell vegetables at the market on Friday.' }, fut: { s: 'אני אמכור לך את זה בחצי מחיר.', w: 'אמכור', en: "I'll sell it to you at half price." } },
+  'לרקוד': { past: { s: 'רקדנו כל הלילה בחתונה.', w: 'רקדנו', en: 'We danced all night at the wedding.' }, pres: { s: 'היא רוקדת מגיל חמש.', w: 'רוקדת', en: "She's been dancing since she was five." }, fut: { s: 'אני לא ארקוד, אני רק אסתכל.', w: 'ארקוד', en: "I won't dance, I'll just watch." } },
+  'לקפוץ': { past: { s: 'הכלב קפץ על הספה.', w: 'קפץ', en: 'The dog jumped on the couch.' }, pres: { s: 'הילדים קופצים לבריכה כל היום.', w: 'קופצים', en: 'The kids jump into the pool all day.' }, fut: { s: 'אני אקפוץ אליך אחרי העבודה.', w: 'אקפוץ', en: "I'll drop by your place after work." } },
+  'לשפוך': { past: { s: 'שפכתי קפה על המחשב.', w: 'שפכתי', en: 'I spilled coffee on the computer.' }, pres: { s: 'למה אתה שופך את המים?', w: 'שופך', en: 'Why are you pouring out the water?' }, fut: { s: 'תיזהר, אתה תשפוך את המרק.', w: 'תשפוך', en: "Careful, you'll spill the soup." } },
+  'לבטל': { past: { s: 'ביטלתי את הפגישה, אני חולה.', w: 'ביטלתי', en: "I canceled the meeting, I'm sick." }, pres: { s: 'הם מבטלים טיסות בגלל הסופה.', w: 'מבטלים', en: "They're canceling flights because of the storm." }, fut: { s: 'אם יירד גשם, נבטל את הטיול.', w: 'נבטל', en: "If it rains, we'll cancel the trip." } },
+  'לבשל': { past: { s: 'מי בישל את האורז הזה? הוא מצוין.', w: 'בישל', en: 'Who cooked this rice? It’s excellent.' }, pres: { s: 'אמא שלי מבשלת לכל המשפחה בשישי.', w: 'מבשלת', en: 'My mom cooks for the whole family on Friday.' }, fut: { s: 'הערב אני אבשל, ואתה תשטוף כלים.', w: 'אבשל', en: "Tonight I'll cook, and you'll wash the dishes." } },
+  'לצלם': { past: { s: 'צילמתי את השקיעה מהמרפסת.', w: 'צילמתי', en: 'I took a picture of the sunset from the balcony.' }, pres: { s: 'הוא מצלם חתונות, זאת העבודה שלו.', w: 'מצלם', en: "He photographs weddings, that's his job." }, fut: { s: 'תצלם אותנו, בבקשה?', w: 'תצלם', en: 'Could you take a picture of us, please?' } },
+  'לטפל': { past: { s: 'הרופא טיפל בו מהר.', w: 'טיפל', en: 'The doctor treated him quickly.' }, pres: { s: 'מי מטפל בכלב כשאתם בחו״ל?', w: 'מטפל', en: "Who takes care of the dog when you're abroad?" }, fut: { s: 'אל תדאג, אני אטפל בזה.', w: 'אטפל', en: "Don't worry, I'll deal with it." } },
+  'להזכיר': { past: { s: 'תודה, הזכרת לי בזמן.', w: 'הזכרת', en: 'Thanks, you reminded me just in time.' }, pres: { s: 'הוא מזכיר לי את אבא שלי.', w: 'מזכיר', en: 'He reminds me of my dad.' }, fut: { s: 'תזכיר לי לקנות חלב.', w: 'תזכיר', en: 'Remind me to buy milk.' } },
+  'להפסיד': { past: { s: 'הקבוצה שלנו הפסידה אתמול.', w: 'הפסידה', en: 'Our team lost yesterday.' }, pres: { s: 'אתה מפסיד, הסרט מעולה.', w: 'מפסיד', en: "You're missing out, the movie is great." }, fut: { s: 'אם לא תבוא, תפסיד.', w: 'תפסיד', en: "If you don't come, you'll miss out." } },
+  'להסתיר': { past: { s: 'היא הסתירה את המתנה בארון.', w: 'הסתירה', en: 'She hid the present in the closet.' }, pres: { s: 'אני מרגיש שאתה מסתיר ממני משהו.', w: 'מסתיר', en: "I feel like you're hiding something from me." }, fut: { s: 'אני לא אסתיר ממך כלום.', w: 'אסתיר', en: "I won't hide anything from you." } },
+  'להשלים': { past: { s: 'השלמתי את כל השיעורים שפספסתי.', w: 'השלמתי', en: 'I caught up on all the lessons I missed.' }, pres: { s: 'היא משלימה תואר שני בערבים.', w: 'משלימה', en: "She's finishing a master's degree in the evenings." }, fut: { s: 'נשלים את זה מחר.', w: 'נשלים', en: "We'll finish this tomorrow." } },
+  'להתקדם': { past: { s: 'התקדמת מאוד בעברית!', w: 'התקדמת', en: "You've made a lot of progress in Hebrew!" }, pres: { s: 'העבודה מתקדמת לאט.', w: 'מתקדמת', en: 'The work is moving slowly.' }, fut: { s: 'אם תתאמן כל יום, תתקדם מהר.', w: 'תתקדם', en: "If you practice every day, you'll progress fast." } },
+  'להסתתר': { past: { s: 'הילד הסתתר מתחת למיטה.', w: 'הסתתר', en: 'The boy hid under the bed.' }, pres: { s: 'החתול מסתתר כל פעם שבאים אורחים.', w: 'מסתתר', en: 'The cat hides every time guests come.' }, fut: { s: 'איפה הם יסתתרו? אין פה מקום.', w: 'יסתתרו', en: "Where will they hide? There's no room here." } },
+  'להתרגל': { past: { s: 'כבר התרגלתי לחום.', w: 'התרגלתי', en: "I've already gotten used to the heat." }, pres: { s: 'הילדים מתרגלים לגן החדש.', w: 'מתרגלים', en: 'The kids are getting used to the new kindergarten.' }, fut: { s: 'אל תדאג, תתרגל.', w: 'תתרגל', en: "Don't worry, you'll get used to it." } },
+  'להשתפר': { past: { s: 'מזג האוויר השתפר אחרי הצהריים.', w: 'השתפר', en: 'The weather got better in the afternoon.' }, pres: { s: 'הוא משתפר מיום ליום.', w: 'משתפר', en: "He's getting better day by day." }, fut: { s: 'המצב ישתפר, תראה.', w: 'ישתפר', en: "Things will get better, you'll see." } },
+  'להימכר': { past: { s: 'הדירה נמכרה תוך שבוע.', w: 'נמכרה', en: 'The apartment sold within a week.' }, pres: { s: 'הכרטיסים נמכרים רק באתר.', w: 'נמכרים', en: 'The tickets are sold only on the website.' }, fut: { s: 'אני בטוח שהבית יימכר מהר.', w: 'יימכר', en: "I'm sure the house will sell fast." } },
+  'להישפך': { past: { s: 'כל המים נשפכו על הרצפה.', w: 'נשפכו', en: 'All the water spilled on the floor.' }, pres: { s: 'הכוסות מלאות מדי, הן נשפכות כל הזמן.', w: 'נשפכות', en: 'The cups are too full, they keep spilling.' }, fut: { s: 'תחזיק ישר, אחרת זה יישפך.', w: 'יישפך', en: "Hold it straight, or it'll spill." } },
+  'להיזכר': { past: { s: 'פתאום נזכרתי שהשארתי את המפתחות בבית.', w: 'נזכרתי', en: 'Suddenly I remembered I left the keys at home.' }, pres: { s: 'כל פעם שאני שומע את השיר הזה, אני נזכר בטיול.', w: 'נזכר', en: 'Every time I hear this song, I think back to the trip.' }, fut: { s: 'אם תיזכר בשם שלו, תגיד לי.', w: 'תיזכר', en: 'If you remember his name, tell me.' } }
+});
+
+Object.assign(EXAMPLES, {
+  'לשמור': {
+    past: { s: 'שמרתי לך מקום בשורה הראשונה.', w: 'שמרתי', en: 'I saved you a seat in the front row.' },
+    pres: { s: 'הוא שומר על הכושר, רץ כל בוקר.', w: 'שומר', en: 'He keeps in shape; he runs every morning.' },
+    fut: { s: 'אני אשמור לך חתיכה מהעוגה.', w: 'אשמור', en: "I'll save you a piece of the cake." }
+  },
+  'לסגור': {
+    past: { s: 'סגרת את הדלת?', w: 'סגרת', en: 'Did you close the door?' },
+    pres: { s: 'הסופר סוגר בשמונה.', w: 'סוגר', en: 'The supermarket closes at eight.' },
+    fut: { s: 'נסגור את זה מחר בטלפון.', w: 'נסגור', en: "We'll settle it tomorrow by phone." }
+  },
+  'לזכור': {
+    past: { s: 'זכרת לקנות חלב?', w: 'זכרת', en: 'Did you remember to buy milk?' },
+    pres: { s: 'אני לא זוכר איפה שמתי את המפתחות.', w: 'זוכר', en: "I don't remember where I put the keys." },
+    fut: { s: 'הוא לא יזכור, תזכיר לו.', w: 'יזכור', en: "He won't remember, remind him." }
+  },
+  'לפגוש': {
+    past: { s: 'פגשתי אותה במקרה בשוק.', w: 'פגשתי', en: 'I ran into her at the market by chance.' },
+    pres: { s: 'אני פוגש חברים בשמונה.', w: 'פוגש', en: "I'm meeting friends at eight." },
+    fut: { s: 'נפגוש אותם בכניסה.', w: 'נפגוש', en: "We'll meet them at the entrance." }
+  },
+  'לשבור': {
+    past: { s: 'הילד שבר את הכוס.', w: 'שבר', en: 'The kid broke the glass.' },
+    pres: { s: 'אני שובר את הראש על זה כבר שעה.', w: 'שובר', en: "I've been racking my brain over this for an hour." },
+    fut: { s: 'תיזהר, אתה תשבור את זה!', w: 'תשבור', en: "Careful, you'll break it!" }
+  },
+  'לבדוק': {
+    past: { s: 'בדקתי, הם פתוחים עד תשע.', w: 'בדקתי', en: "I checked; they're open until nine." },
+    pres: { s: 'הרופא בודק אותו עכשיו.', w: 'בודק', en: 'The doctor is examining him now.' },
+    fut: { s: 'אני אבדוק ואחזור אליך.', w: 'אבדוק', en: "I'll check and get back to you." }
+  },
+  'לספר': {
+    past: { s: 'הוא סיפר לי שהוא עובר דירה.', w: 'סיפר', en: "He told me he's moving." },
+    pres: { s: 'היא מספרת לילדים סיפור לפני השינה.', w: 'מספרת', en: 'She tells the kids a story before bed.' },
+    fut: { s: 'אל תספר לאף אחד!', w: 'תספר', en: "Don't tell anyone!" }
+  },
+  'לבקש': {
+    past: { s: 'ביקשתי ממנו לחכות.', w: 'ביקשתי', en: 'I asked him to wait.' },
+    pres: { s: 'אני מבקש רק דבר אחד.', w: 'מבקש', en: "I'm asking for just one thing." },
+    fut: { s: 'תבקשי מהמלצר את החשבון.', w: 'תבקשי', en: 'Ask the waiter for the bill. (to a woman)' }
+  },
+  'לקבל': {
+    past: { s: 'קיבלת את ההודעה שלי?', w: 'קיבלת', en: 'Did you get my message?' },
+    pres: { s: 'הם מקבלים משכורת בעשירי לחודש.', w: 'מקבלים', en: 'They get paid on the tenth of the month.' },
+    fut: { s: 'תקבל תשובה עד יום ראשון.', w: 'תקבל', en: "You'll get an answer by Sunday." }
+  },
+  'לסדר': {
+    past: { s: 'סידרתי את הארון אתמול.', w: 'סידרתי', en: 'I tidied the closet yesterday.' },
+    pres: { s: 'היא מסדרת את הבית לפני שהאורחים מגיעים.', w: 'מסדרת', en: 'She tidies the house before the guests arrive.' },
+    fut: { s: 'אל תדאג, אני אסדר לך את זה.', w: 'אסדר', en: "Don't worry, I'll sort it out for you." }
+  },
+  'לתקן': {
+    past: { s: 'הטכנאי תיקן את המזגן.', w: 'תיקן', en: 'The technician fixed the air conditioner.' },
+    pres: { s: 'מי מתקן פה אופניים?', w: 'מתקן', en: 'Who fixes bikes around here?' },
+    fut: { s: 'נתקן את זה בסוף השבוע.', w: 'נתקן', en: "We'll fix it over the weekend." }
+  },
+  'לפטר': {
+    past: { s: 'פיטרו אותו אחרי חודש.', w: 'פיטרו', en: 'They fired him after a month.' },
+    pres: { s: 'החברה מפטרת מאה עובדים.', w: 'מפטרת', en: 'The company is laying off a hundred workers.' },
+    fut: { s: 'הם לא יפטרו אותך בגלל זה.', w: 'יפטרו', en: "They won't fire you over this." }
+  },
+  'להזמין': {
+    past: { s: 'הזמנו פיצה.', w: 'הזמנו', en: 'We ordered pizza.' },
+    pres: { s: 'אני מזמין אתכם לארוחת שישי.', w: 'מזמין', en: "I'm inviting you all for Friday dinner." },
+    fut: { s: 'תזמין לנו מונית?', w: 'תזמין', en: 'Will you order us a taxi?' }
+  },
+  'להפסיק': {
+    past: { s: 'הגשם הפסיק סוף סוף.', w: 'הפסיק', en: 'The rain finally stopped.' },
+    pres: { s: 'הוא לא מפסיק לדבר.', w: 'מפסיק', en: 'He never stops talking.' },
+    fut: { s: 'אני אפסיק לשתות קפה אחרי ארבע.', w: 'אפסיק', en: "I'll stop drinking coffee after four." }
+  },
+  'להקשיב': {
+    past: { s: 'הקשבת למה שאמרתי?', w: 'הקשבת', en: 'Did you listen to what I said?' },
+    pres: { s: 'אף אחד לא מקשיב לי פה.', w: 'מקשיב', en: 'Nobody listens to me here.' },
+    fut: { s: 'תקשיבו, יש לי רעיון.', w: 'תקשיבו', en: 'Listen, I have an idea.' }
+  },
+  'להסכים': {
+    past: { s: 'בעל הבית הסכים להוריד את המחיר.', w: 'הסכים', en: 'The landlord agreed to lower the price.' },
+    pres: { s: 'אני מסכים איתך לגמרי.', w: 'מסכים', en: 'I completely agree with you.' },
+    fut: { s: 'היא לא תסכים, אני מכיר אותה.', w: 'תסכים', en: "She won't agree, I know her." }
+  },
+  'להמשיך': {
+    past: { s: 'המשכנו ללכת עד הים.', w: 'המשכנו', en: 'We kept walking all the way to the sea.' },
+    pres: { s: 'היא ממשיכה לעבוד גם בפנסיה.', w: 'ממשיכה', en: "She keeps working even though she's retired." },
+    fut: { s: 'נמשיך מחר, אני גמור.', w: 'נמשיך', en: "We'll continue tomorrow, I'm wiped out." }
+  },
+  'להדליק': {
+    past: { s: 'מי הדליק את האור?', w: 'הדליק', en: 'Who turned on the light?' },
+    pres: { s: 'אנחנו מדליקים נרות בשישי בערב.', w: 'מדליקים', en: 'We light candles on Friday evening.' },
+    fut: { s: 'תדליק את המזגן, חם פה.', w: 'תדליק', en: "Turn on the AC, it's hot in here." }
+  },
+  'להסתדר': {
+    past: { s: 'בסוף הכול הסתדר.', w: 'הסתדר', en: 'In the end everything worked out.' },
+    pres: { s: 'אתה מסתדר עם העברית?', w: 'מסתדר', en: 'Are you managing with the Hebrew?' },
+    fut: { s: 'אל תדאג, נסתדר.', w: 'נסתדר', en: "Don't worry, we'll manage." }
+  },
+  'להתקבל': {
+    past: { s: 'התקבלתי לעבודה!', w: 'התקבלתי', en: 'I got the job!' },
+    pres: { s: 'בקושי מישהו מתקבל לתוכנית הזאת.', w: 'מתקבל', en: 'Hardly anyone gets into this program.' },
+    fut: { s: 'אני בטוח שהיא תתקבל לאוניברסיטה.', w: 'תתקבל', en: "I'm sure she'll get into university." }
+  },
+  'להתפטר': {
+    past: { s: 'הוא התפטר אחרי עשר שנים בחברה.', w: 'התפטר', en: 'He quit after ten years at the company.' },
+    pres: { s: 'אני מתפטר, נמאס לי!', w: 'מתפטר', en: "I'm quitting, I've had enough!" },
+    fut: { s: 'היא אמרה שהיא תתפטר בסוף השנה.', w: 'תתפטר', en: "She said she'll quit at the end of the year." }
+  },
+  'להסתפר': {
+    past: { s: 'הסתפרת? יפה לך!', w: 'הסתפרת', en: 'Did you get a haircut? It looks good on you!' },
+    pres: { s: 'אני מסתפר אצל אותו ספר כבר עשר שנים.', w: 'מסתפר', en: "I've been getting my hair cut at the same barber for ten years." },
+    fut: { s: 'אני אסתפר לפני החתונה.', w: 'אסתפר', en: "I'll get a haircut before the wedding." }
+  },
+  'להישבר': {
+    past: { s: 'הטלפון נפל והמסך נשבר.', w: 'נשבר', en: 'The phone fell and the screen broke.' },
+    pres: { s: 'הכוסות האלה נשברות בקלות.', w: 'נשברות', en: 'These glasses break easily.' },
+    fut: { s: 'תעטוף את זה טוב, שלא יישבר בדרך.', w: 'יישבר', en: "Wrap it well so it doesn't break on the way." }
+  },
+  'להיפגש': {
+    past: { s: 'נפגשנו בבית קפה ליד התחנה.', w: 'נפגשנו', en: 'We met at a café near the station.' },
+    pres: { s: 'אנחנו נפגשים כל יום חמישי.', w: 'נפגשים', en: 'We meet up every Thursday.' },
+    fut: { s: 'ניפגש בשמונה ליד הכניסה?', w: 'ניפגש', en: 'Meet at eight by the entrance?' }
+  },
+  'להיגמר': {
+    past: { s: 'החלב נגמר, צריך לקנות.', w: 'נגמר', en: "We're out of milk, we need to buy some." },
+    pres: { s: 'ההופעה נגמרת בחצות.', w: 'נגמרת', en: 'The show ends at midnight.' },
+    fut: { s: 'מתי זה ייגמר?', w: 'ייגמר', en: 'When will this be over?' }
+  }
+});
+
+VERBS.forEach((v) => { v.p = vocalize(v.root, v.b, 'inf', null, v.o); });
+
+/* ---------- Pronunciation, example sentences and English (each a tap away) ---------- */
+const VOICE_KEY = 'binyan-builder-voice';
+let voicePref = { name: '', rate: 0.85 };
+try { voicePref = Object.assign(voicePref, JSON.parse(localStorage.getItem(VOICE_KEY)) || {}); } catch (e) {}
+function hebrewVoices() {
+  try { return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^(he|iw)\b/i.test(v.lang)); } catch (e) { return []; }
+}
+function voiceScore(v) { return (/(natural|neural|online|enhanced|premium|siri)/i.test(v.name) ? 2 : 0) + (/google/i.test(v.name) ? 1 : 0); }
+function bestVoice() {
+  const vs = hebrewVoices();
+  if (!vs.length) return null;
+  return vs.find((v) => v.name === voicePref.name) || vs.slice().sort((a, b) => voiceScore(b) - voiceScore(a))[0];
+}
+function speak(text) {
+  const v = bestVoice();
+  if (!v) return false;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = v; u.lang = v.lang; u.rate = voicePref.rate;
+    speechSynthesis.speak(u);
+    return true;
+  } catch (e) { return false; }
+}
+if (window.speechSynthesis) { try { speechSynthesis.getVoices(); speechSynthesis.addEventListener('voiceschanged', () => renderVoiceSettings()); } catch (e) {} }
+
+function logSupport(entry) {
+  state.support = state.support || [];
+  state.support.push(Object.assign({ at: new Date().toISOString() }, entry));
+  save();
+}
+
+// Pointed form for any unpointed form of a known verb (used where only the spelling is known)
+function pointFor(root, b, form) {
+  const v = VERBS.find((x) => x.root === root && x.b === b);
+  if (!v) return form;
+  if (v.forms.inf === form) return vocalize(v.root, v.b, 'inf', null, v.o);
+  for (const t of TENSE_KEYS) for (const p of personsOf(t)) if (v.forms[t][p] === form) return vocalize(v.root, v.b, t, p, v.o);
+  return form;
+}
+function hearBtn(text, form, label) {
+  return `<button class="btn small" type="button" data-act="hear" data-say="${text}" data-form="${form}">${label || 'Hear it'}</button>`;
+}
+// Card for one verb form: pointed form + sound; up to 3 example sentences, one per tap (same tense first, then the other tenses); English on tap
+function wordCard(v, tense, person) {
+  const pointed = vocalize(v.root, v.b, tense, person, v.o);
+  const form = formOf(v, tense, person);
+  const exAll = EXAMPLES[v.forms.inf] || {};
+  const order = [tense].concat(TENSE_KEYS.filter((t) => t !== tense)).filter((t) => exAll[t]);
+  const items = order.map((t, i) => {
+    const ex = exAll[t];
+    return `<li class="ex-item" hidden>
+      <span class="small-he" lang="he">${TENSES[t]}</span>
+      <span class="sentence small" lang="he" dir="rtl">${ex.s.replace(ex.w, `<mark>${ex.w}</mark>`)}</span>
+      ${hearBtn(ex.s, form, 'Hear')}
+      <span class="note en" hidden>${ex.en}</span>
+    </li>`;
+  }).join('');
+  return `<div class="wordcard" data-card data-form="${form}" data-shown="0" data-total="${order.length}">
+    <div class="row"><span class="pointed" lang="he">${pointed}</span>${hearBtn(pointed, form)}</div>
+    <div class="small-he" lang="he">${person} · ${TENSES[tense]}</div>
+    ${order.length ? `<ol class="ex-list">${items}</ol>
+    <div class="row">
+      <button class="btn small" type="button" data-act="example" data-form="${form}">Example sentence</button>
+      <button class="btn small" type="button" data-act="english" data-form="${form}" hidden>English</button>
+    </div>
+    <p class="note en-meaning" hidden>${v.forms.inf}: ${v.e}</p>` : ''}
+  </div>`;
+}
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const card = btn.closest('[data-card]');
+  const act = btn.dataset.act;
+  if (act === 'hear') {
+    const ok = speak(btn.dataset.say);
+    if (!ok) { btn.textContent = 'No Hebrew voice. See Guide → Voice'; btn.disabled = true; }
+    logSupport({ action: 'hear', form: btn.dataset.form, text: btn.dataset.say, voiceFound: ok });
+  } else if (act === 'example' && card) {
+    const shown = Number(card.dataset.shown) + 1, total = Number(card.dataset.total);
+    card.dataset.shown = shown;
+    const li = card.querySelectorAll('.ex-item')[shown - 1];
+    if (li) { li.hidden = false; if (card.dataset.english === '1') li.querySelector('.en').hidden = false; }
+    if (shown >= total) btn.hidden = true; else btn.textContent = `Another sentence (${shown + 1} of ${total})`;
+    const en = card.querySelector('[data-act="english"]'); if (en && card.dataset.english !== '1') en.hidden = false;
+    logSupport({ action: 'example', form: btn.dataset.form, n: shown });
+  } else if (act === 'english' && card) {
+    card.dataset.english = '1';
+    card.querySelectorAll('.ex-item:not([hidden]) .en').forEach((x) => { x.hidden = false; });
+    const m = card.querySelector('.en-meaning'); if (m) m.hidden = false;
+    btn.hidden = true;
+    logSupport({ action: 'english', form: btn.dataset.form });
+  } else if (act === 'reveal-meaning') {
+    const m = btn.parentElement.querySelector('.meaning'); if (m) m.hidden = false;
+    btn.hidden = true;
+    logSupport({ action: 'english-prompt', form: btn.dataset.form });
+  } else if (act === 'voice-test') {
+    speak('שָׁלוֹם, אֲנִי מְדַבֵּר עִבְרִית.');
+  }
+});
+
+/* Voice settings (in the Guide tab) */
+function renderVoiceSettings() {
+  const host = document.getElementById('voice-settings');
+  if (!host) return;
+  const vs = hebrewVoices();
+  const cur = bestVoice();
+  if (!window.speechSynthesis) { host.innerHTML = '<p class="note">This browser has no text-to-speech. Try Chrome, Edge or Safari.</p>'; return; }
+  if (!vs.length) {
+    host.innerHTML = `<p class="note">No Hebrew voice found on this device. See "Getting a better voice" below, then reload this page.</p>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="row">
+      <label class="small" for="voice-select">Voice</label>
+      <select id="voice-select">${vs.slice().sort((a, b) => voiceScore(b) - voiceScore(a)).map((v) => `<option value="${v.name}" ${cur && v.name === cur.name ? 'selected' : ''}>${v.name}${v.localService ? '' : ' (online)'}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <label class="small" for="voice-rate">Speed</label>
+      <select id="voice-rate">${[0.7, 0.85, 1].map((r) => `<option value="${r}" ${r === voicePref.rate ? 'selected' : ''}>${r === 0.7 ? 'Slow' : r === 0.85 ? 'A bit slow' : 'Normal'}</option>`).join('')}</select>
+      <button class="btn small" type="button" data-act="voice-test">Test</button>
+    </div>`;
+  const persist = () => { try { localStorage.setItem(VOICE_KEY, JSON.stringify(voicePref)); } catch (e) {} };
+  host.querySelector('#voice-select').addEventListener('change', (e) => { voicePref.name = e.target.value; persist(); });
+  host.querySelector('#voice-rate').addEventListener('change', (e) => { voicePref.rate = Number(e.target.value); persist(); });
+}
+
+/* ---------- New words, learned from context ----------
+   s: learning sentences, from fewest clues to most ([sentence, form as it appears])
+   c: fill-in sentences for practice (___ is the word itself) */
+const N = (w, sg, pl, more) => Object.assign({ w, pos: 'noun', forms: Object.assign({}, sg ? { sg } : {}, pl ? { pl } : {}), p: sg || pl }, more);
+const A = (w, ms, fs, mp, fp, more) => Object.assign({ w, pos: 'adj', forms: { ms, fs, mp, fp }, p: ms }, more);
+const V = (w, inf, past, pres, more) => Object.assign({ w, pos: 'verb', forms: { inf, past, pres }, p: inf }, more);
+const D = (w, b, more) => Object.assign({ w, pos: 'adv', forms: { b }, p: b }, more);
+
+const VOCAB = [
+  /* ----- the first 15 ----- */
+  N('תור', 'תּוֹר', 'תּוֹרִים', {
+    s: [['הָיָה תּוֹר אָרוֹךְ בַּסּוּפֶּר.', 'תּוֹר'], ['חִיכִּיתִי בַּתּוֹר חֲצִי שָׁעָה בַּדּוֹאַר.', 'בַּתּוֹר'], ['קָבַעְתִּי תּוֹר לָרוֹפֵא לְיוֹם שְׁלִישִׁי.', 'תּוֹר']],
+    d: 'שׁוּרָה שֶׁל אֲנָשִׁים שֶׁמְּחַכִּים; גַּם: פְּגִישָׁה שֶׁקּוֹבְעִים אֵצֶל רוֹפֵא אוֹ בַּעַל מִקְצוֹעַ', en: 'a line (queue); also an appointment',
+    c: [{ s: 'יֵשׁ לִי ___ לְרוֹפֵא שִׁינַּיִים מָחָר בַּבֹּקֶר.', a: 'sg' }, { s: 'אֵין ___ פְּנוּיִים לָרוֹפֵא עַד יוֹם רִאשׁוֹן.', a: 'pl' }] }),
+  N('משלוח', 'מִשְׁלוֹחַ', 'מִשְׁלוֹחִים', { r: 'ש-ל-ח', rel: 'לִשְׁלוֹחַ = to send',
+    s: [['יֵשׁ מִשְׁלוֹחַ חִינָּם בְּהַזְמָנָה מֵעַל מָאתַיִים שֶׁקֶל.', 'מִשְׁלוֹחַ'], ['הִזְמַנְתִּי נַעֲלַיִים בָּאִינְטֶרְנֶט, וְהַמִּשְׁלוֹחַ הִגִּיעַ אַחֲרֵי שָׁבוּעַ.', 'וְהַמִּשְׁלוֹחַ'], ['הַשָּׁלִיחַ הִתְקַשֵּׁר לְהַגִּיד שֶׁהַמִּשְׁלוֹחַ מְחַכֶּה לְמַטָּה.', 'שֶׁהַמִּשְׁלוֹחַ']],
+    d: 'חֲבִילָה אוֹ מוּצָרִים שֶׁנִּשְׁלָחִים אֵלֶיךָ; גַּם: הַשֵּׁירוּת שֶׁל הַשְּׁלִיחָה', en: 'delivery, shipment',
+    c: [{ s: 'כַּמָּה עוֹלֶה ___ לִירוּשָׁלַיִם?', a: 'sg' }, { s: 'הַחֶבְרָה עוֹשָׂה ___ עַד הַבַּיִת רַק בְּיָמִים שֵׁנִי וַחֲמִישִׁי.', a: 'pl' }] }),
+  N('הנחה', 'הֲנָחָה', 'הֲנָחוֹת', {
+    s: [['יֵשׁ הֲנָחָה לִסְטוּדֶנְטִים בְּכָל הַכַּרְטִיסִים.', 'הֲנָחָה'], ['קִיבַּלְתִּי הֲנָחָה שֶׁל עֲשָׂרָה אָחוּז כִּי שִׁילַּמְתִּי בִּמְזוּמָּן.', 'הֲנָחָה'], ['הַמְּחִיר הָיָה מֵאָה שֶׁקֶל, אֲבָל אַחֲרֵי הַהֲנָחָה שִׁילַּמְתִּי שִׁבְעִים.', 'הַהֲנָחָה']],
+    d: 'הוֹרָדָה בַּמְּחִיר', en: 'a discount',
+    c: [{ s: 'יֵשׁ ___ אִם מְשַׁלְּמִים בִּמְזוּמָּן?', a: 'sg', x: ['עמלה'] }, { s: 'בְּסוֹף הָעוֹנָה יֵשׁ ___ גְּדוֹלוֹת בְּכָל הַחֲנוּיּוֹת.', a: 'pl' }] }),
+  N('קבלה', 'קַבָּלָה', 'קַבָּלוֹת', { r: 'ק-ב-ל', rel: 'לְקַבֵּל = to receive',
+    s: [['תִּשְׁמוֹר אֶת הַקַּבָּלָה, אוּלַי תִּרְצֶה לְהַחְזִיר אֶת הַחוּלְצָה.', 'הַקַּבָּלָה'], ['אַחֲרֵי שֶׁשִּׁילַּמְתִּי, הַקּוּפָּאִית נָתְנָה לִי קַבָּלָה.', 'קַבָּלָה'], ['בְּלִי קַבָּלָה אִי אֶפְשָׁר לְקַבֵּל אֶת הַכֶּסֶף בַּחֲזָרָה.', 'קַבָּלָה']],
+    d: 'פֶּתֶק שֶׁמַּרְאֶה שֶׁשִּׁילַּמְתָּ', en: 'a receipt',
+    c: [{ s: 'אֶפְשָׁר ___ מוּדְפֶּסֶת, בְּבַקָּשָׁה?', a: 'sg' }, { s: 'תִּשְׁמוֹר ___ שֶׁל כָּל הַקְּנִיּוֹת בִּשְׁבִיל רוֹאֵה הַחֶשְׁבּוֹן.', a: 'pl' }] }),
+  N('פקק', 'פְּקָק', 'פְּקָקִים', {
+    s: [['אִיחַרְתִּי לַפְּגִישָׁה כִּי הָיָה פְּקָק עֲנָק.', 'פְּקָק'], ['נִתְקַעְתִּי בִּפְקָק בַּכְּנִיסָה לִירוּשָׁלַיִם.', 'בִּפְקָק'], ['בִּשְׁמוֹנֶה בַּבֹּקֶר תָּמִיד יֵשׁ פְּקָקִים, כָּל הַמְּכוֹנִיּוֹת עוֹמְדוֹת.', 'פְּקָקִים']],
+    d: 'הַרְבֵּה מְכוֹנִיּוֹת שֶׁעוֹמְדוֹת בַּכְּבִישׁ וְלֹא זָזוֹת; גַּם: מִכְסֶה שֶׁל בַּקְבּוּק', en: 'a traffic jam; also a cork or bottle cap',
+    c: [{ s: 'יֵשׁ ___ רְצִינִי בִּכְבִישׁ אֶחָד.', a: 'sg' }, { s: 'בְּיוֹם שִׁישִּׁי אַחֲרֵי הַצָּהֳרַיִים אֵין ___ בָּעִיר.', a: 'pl' }] }),
+  N('מבצע', 'מִבְצָע', 'מִבְצָעִים', { r: 'ב-צ-ע', rel: 'לְבַצֵּעַ = to carry out',
+    s: [['קָנִיתִי אֶת מְכוֹנַת הַקָּפֶה בְּמִבְצָע.', 'בְּמִבְצָע'], ['יֵשׁ מִבְצָע בַּסּוּפֶּר: שְׁתַּיִים בִּמְחִיר שֶׁל אַחַת.', 'מִבְצָע'], ['הַמִּבְצָע נִגְמָר בְּיוֹם שִׁישִּׁי, וְאַחֲרֵי זֶה הַמְּחִיר חוֹזֵר לִהְיוֹת רָגִיל.', 'הַמִּבְצָע']],
+    d: 'מְחִיר מְיוּחָד וְזוֹל לִזְמַן מוּגְבָּל; גַּם: פְּעוּלָה צְבָאִית גְּדוֹלָה', en: 'a special offer, a sale; also a (military) operation',
+    c: [{ s: 'יֵשׁ ___ מְיוּחָד רַק עַד סוֹף הַחוֹדֶשׁ.', a: 'sg' }, { s: 'לִפְנֵי הַחַגִּים יֵשׁ ___ טוֹבִים בַּסּוּפֶּר.', a: 'pl' }] }),
+  A('מתאים', 'מַתְאִים', 'מַתְאִימָה', 'מַתְאִימִים', 'מַתְאִימוֹת', { r: 'ת-א-מ', rel: 'לְהַתְאִים = to fit, to match',
+    s: [['יוֹם שְׁלִישִׁי מַתְאִים לְךָ לַפְּגִישָׁה?', 'מַתְאִים'], ['הַדִּירָה יָפָה, אֲבָל הִיא לֹא מַתְאִימָה לְמִשְׁפָּחָה עִם אַרְבָּעָה יְלָדִים.', 'מַתְאִימָה'], ['הַחוּלְצָה הַזֹּאת לֹא מַתְאִימָה לַמִּכְנָסַיִים הָאֵלֶּה, הַצְּבָעִים לֹא הוֹלְכִים בְּיַחַד.', 'מַתְאִימָה']],
+    d: 'טוֹב בִּשְׁבִיל מַשֶּׁהוּ אוֹ מִישֶׁהוּ; נָכוֹן לַמַּצָּב', en: 'suitable; fits, works for (someone)',
+    c: [{ s: 'מָחָר בְּעֶשֶׂר ___ לְךָ?', a: 'ms' }, { s: 'הַנַּעֲלַיִים הָאֵלֶּה לֹא ___ לַשִּׂמְלָה שֶׁלָּהּ.', a: 'fp' }] }),
+  D('בעצם', 'בְּעֶצֶם', {
+    s: [['אָז בְּעֶצֶם מָה אַתָּה רוֹצֶה?', 'בְּעֶצֶם'], ['בְּעֶצֶם, אֲנִי לֹא צָרִיךְ אֶת זֶה, תּוֹדָה.', 'בְּעֶצֶם'], ['חָשַׁבְתִּי שֶׁהוּא אֲמֵרִיקָאִי, אֲבָל בְּעֶצֶם הוּא קָנָדִי.', 'בְּעֶצֶם']],
+    d: 'לְמַעֲשֶׂה; מִילָּה שֶׁמְּתַקֶּנֶת אוֹ מַבְהִירָה אֶת מָה שֶׁנֶּאֱמַר', en: 'actually, in fact; basically',
+    c: [{ s: 'אָז ___ אַתָּה אוֹמֵר שֶׁאֵין בְּעָיָה?', a: 'b' }, { s: 'בָּאתִי לִקְנוֹת חָלָב, אֲבָל ___ יֵשׁ עוֹד בַּמְּקָרֵר.', a: 'b' }] }),
+  A('עמוס', 'עָמוּס', 'עֲמוּסָה', 'עֲמוּסִים', 'עֲמוּסוֹת', { r: 'ע-מ-ס', rel: 'עוֹמֶס = load, heavy traffic',
+    s: [['יֵשׁ לִי יוֹם עָמוּס מָחָר, נְדַבֵּר בָּעֶרֶב.', 'עָמוּס'], ['הַשָּׁבוּעַ שֶׁלִּי עָמוּס, אֵין לִי רֶגַע פָּנוּי.', 'עָמוּס'], ['הָאוֹטוֹבּוּס הָיָה עָמוּס, לֹא הָיָה אֵיפֹה לָשֶׁבֶת.', 'עָמוּס']],
+    d: 'מָלֵא מְאוֹד; יֵשׁ בּוֹ הַרְבֵּה דְּבָרִים אוֹ הַרְבֵּה אֲנָשִׁים', en: 'busy, packed, loaded',
+    c: [{ s: 'הַכְּבִישִׁים ___ בַּשָּׁעוֹת הָאֵלֶּה.', a: 'mp' }, { s: 'הָרַכֶּבֶת הָיְיתָה ___, עָמַדְתִּי כָּל הַדֶּרֶךְ.', a: 'fs' }] }),
+  A('דחוף', 'דָּחוּף', 'דְּחוּפָה', 'דְּחוּפִים', 'דְּחוּפוֹת', { r: 'ד-ח-פ', rel: 'לִדְחוֹף = to push',
+    s: [['אִם זֶה לֹא דָּחוּף, נְדַבֵּר עַל זֶה מָחָר.', 'דָּחוּף'], ['יֵשׁ לִי שִׂיחָה דְּחוּפָה, אֲנִי חוֹזֵר אֵלֶיךָ עוֹד מְעַט.', 'דְּחוּפָה'], ['זֶה דָּחוּף, אֲנִי צָרִיךְ תְּשׁוּבָה עַד הַצָּהֳרַיִים.', 'דָּחוּף']],
+    d: 'צָרִיךְ לַעֲשׂוֹת אֶת זֶה מַהֵר, עַכְשָׁיו', en: 'urgent',
+    c: [{ s: 'זֶה ___? אֲנִי בְּאֶמְצַע פְּגִישָׁה.', a: 'ms' }, { s: 'יֵשׁ לִי כַּמָּה הוֹדָעוֹת ___ לִשְׁלוֹחַ לִפְנֵי שֶׁאֲנִי יוֹצֵא.', a: 'fp' }] }),
+  N('סידורים', null, 'סִידּוּרִים', { r: 'ס-ד-ר', rel: 'לְסַדֵּר = to arrange, sort out',
+    s: [['אֲנִי יוֹצֵא לַעֲשׂוֹת כַּמָּה סִידּוּרִים, אַחְזוֹר בַּצָּהֳרַיִים.', 'סִידּוּרִים'], ['יֵשׁ לִי מָלֵא סִידּוּרִים הַיּוֹם, אֵין לִי כּוֹחַ.', 'סִידּוּרִים'], ['בְּיוֹם שִׁישִּׁי בַּבֹּקֶר אֲנִי עוֹשֶׂה אֶת כָּל הַסִּידּוּרִים: בַּנְק, דּוֹאַר וְסוּפֶּר.', 'הַסִּידּוּרִים']],
+    d: 'דְּבָרִים קְטַנִּים שֶׁצָּרִיךְ לַעֲשׂוֹת מִחוּץ לַבַּיִת: בַּנְק, דּוֹאַר, קְנִיּוֹת', en: 'errands',
+    c: [{ s: 'אֲנִי הוֹלֵךְ לַעֲשׂוֹת ___ וְאַחַר כָּךְ אֲנִי פָּנוּי.', a: 'pl' }, { s: 'הַיּוֹם יֵשׁ לִי הַרְבֵּה ___ בָּעִיר.', a: 'pl' }] }),
+  N('אישור', 'אִישּׁוּר', 'אִישּׁוּרִים', { r: 'א-ש-ר', rel: 'לְאַשֵּׁר = to confirm, to approve',
+    s: [['צָרִיךְ אִישּׁוּר מֵהַבּוֹס לִפְנֵי שֶׁמַּתְחִילִים.', 'אִישּׁוּר'], ['קִיבַּלְתִּי אִישּׁוּר בַּמֵּייל שֶׁהַהַזְמָנָה הִתְקַבְּלָה.', 'אִישּׁוּר'], ['הָרוֹפֵא נָתַן לִי אִישּׁוּר מַחֲלָה לִשְׁלוֹשָׁה יָמִים.', 'אִישּׁוּר']],
+    d: 'מִסְמָךְ אוֹ הוֹדָעָה שֶׁאוֹמְרִים שֶׁמַּשֶּׁהוּ בְּסֵדֶר אוֹ מוּתָּר', en: 'confirmation; approval, permit',
+    c: [{ s: 'הַבּוֹס נָתַן לִי ___ לָצֵאת מוּקְדָּם הַיּוֹם.', a: 'sg' }, { s: 'הָעִירִיָּיה נָתְנָה לָנוּ אֶת כָּל הָ___, אֶפְשָׁר לְהַתְחִיל לִבְנוֹת.', a: 'pl' }] }),
+  D('ממילא', 'מִמֵּילָא', {
+    s: [['תִּיקַּח אֶת הַמִּטְרִיָּיה, אֲנִי מִמֵּילָא נִשְׁאָר בַּבַּיִת.', 'מִמֵּילָא'], ['אַל תִּדְאַג, מִמֵּילָא לֹא רָצִיתִי לָלֶכֶת.', 'מִמֵּילָא'], ['לֹא נוֹרָא שֶׁהָאוֹטוֹבּוּס אִיחֵר, מִמֵּילָא הַחֲנוּת נִפְתַּחַת רַק בְּעֶשֶׂר.', 'מִמֵּילָא']],
+    d: 'בְּכָל מִקְרֶה; גַּם בְּלִי זֶה הַמַּצָּב הָיָה אוֹתוֹ דָּבָר', en: 'anyway, in any case (it would be so regardless)',
+    c: [{ s: 'תִּזְרוֹק אֶת זֶה, זֶה ___ שָׁבוּר.', a: 'b', x: ['בעצם'] }, { s: 'אַל תִּקְנֶה לִי עוּגָה, אֲנִי ___ בְּדִיאֶטָה.', a: 'b', x: ['בעצם'] }] }),
+  V('להתעכב', 'לְהִתְעַכֵּב', 'הִתְעַכֵּב', 'מִתְעַכֵּב', { r: 'ע-כ-ב', rel: 'בִּנְיָן הִתְפַּעֵל; לְעַכֵּב = to delay (someone)',
+    s: [['אַל תִּתְעַכֵּב, אֲנַחְנוּ מְחַכִּים לְךָ.', 'תִּתְעַכֵּב'], ['סְלִיחָה שֶׁאֲנִי מְאַחֵר, הִתְעַכַּבְתִּי בָּעֲבוֹדָה.', 'הִתְעַכַּבְתִּי'], ['הַטִּיסָה הִתְעַכְּבָה בְּשָׁעָתַיִים בִּגְלַל מֶזֶג הָאֲוִויר.', 'הִתְעַכְּבָה']],
+    d: 'לָקַחַת יוֹתֵר זְמַן מִמָּה שֶׁתּוּכְנַן; לְהִישָּׁאֵר יוֹתֵר מִדַּי זְמַן בְּמָקוֹם', en: 'to be delayed, held up',
+    c: [{ s: 'אֲנִי לֹא יָכוֹל ___, יֵשׁ לִי פְּגִישָׁה בְּעוֹד רֶבַע שָׁעָה.', a: 'inf' }, { s: 'הָאוֹטוֹבּוּס ___ בִּגְלַל תְּאוּנָה בַּכְּבִישׁ.', a: 'past' }] }),
+  V('לוותר', 'לְוַותֵּר', 'וִיתֵּר', 'מְוַותֵּר', { r: 'ו-ת-ר', rel: 'וִיתּוּר = giving up, a concession',
+    s: [['הוּא לֹא מוּכָן לְוַותֵּר עַל הַחֲנָיָיה שֶׁלּוֹ.', 'לְוַותֵּר'], ['וִיתַּרְתִּי עַל הַקָּפֶה בַּבֹּקֶר, וְעַכְשָׁיו אֲנִי עָיֵיף כָּל הַיּוֹם.', 'וִיתַּרְתִּי'], ['אַל תְּוַותֵּר, עוֹד קְצָת וְאַתָּה מְסַיֵּים!', 'תְּוַותֵּר']],
+    d: 'לְהַפְסִיק לְנַסּוֹת; לְהַסְכִּים בְּלִי לְקַבֵּל מַשֶּׁהוּ שֶׁרָצִיתָ', en: 'to give up; to let go of, forgo',
+    c: [{ s: 'אֲנִי לֹא מוּכָן ___ עַל זֶה.', a: 'inf' }, { s: 'הוּא ___ לָהּ עַל הַמָּקוֹם וְעָמַד כָּל הַדֶּרֶךְ.', a: 'past' }] }),
+
+  /* ----- 50 new words ----- */
+  N('טופס', 'טוֹפֶס', 'טְפָסִים', {
+    s: [['מִילֵּאתִי טוֹפֶס בַּבַּנְק וְחָתַמְתִּי לְמַטָּה.', 'טוֹפֶס'], ['אֶת הַטּוֹפֶס אֶפְשָׁר לְמַלֵּא גַּם בָּאִינְטֶרְנֶט.', 'הַטּוֹפֶס'], ['בַּמִּשְׂרָד נָתְנוּ לִי שְׁלוֹשָׁה טְפָסִים לְמַלֵּא.', 'טְפָסִים']],
+    d: 'דַּף עִם שְׁאֵלוֹת שֶׁכּוֹתְבִים בּוֹ פְּרָטִים, בְּדֶרֶךְ כְּלָל בִּשְׁבִיל מִשְׂרָד אוֹ בַּנְק', en: 'a form (to fill out)',
+    c: [{ s: 'תְּמַלֵּא ___ וְתַחְזִיר אוֹתוֹ לַפְּקִידָה.', a: 'sg' }, { s: 'יֵשׁ כָּל כָּךְ הַרְבֵּה ___ לְמַלֵּא כְּשֶׁעוֹבְרִים דִּירָה.', a: 'pl' }] }),
+  N('תיקון', 'תִּיקּוּן', 'תִּיקּוּנִים', { r: 'ת-ק-נ', rel: 'לְתַקֵּן = to fix',
+    s: [['הַמְּכוֹנִית בַּמּוּסָךְ, הַתִּיקּוּן יִיקַּח יוֹמַיִים.', 'הַתִּיקּוּן'], ['כַּמָּה עוֹלֶה תִּיקּוּן שֶׁל מָסָךְ?', 'תִּיקּוּן'], ['הַדִּירָה יְשָׁנָה, יֵשׁ בָּהּ הַרְבֵּה תִּיקּוּנִים לַעֲשׂוֹת.', 'תִּיקּוּנִים']],
+    d: 'הָעֲבוֹדָה שֶׁעוֹשִׂים כְּדֵי שֶׁמַּשֶּׁהוּ שָׁבוּר יַעֲבוֹד שׁוּב', en: 'a repair; a correction',
+    c: [{ s: 'הַטֶּכְנַאי אָמַר: ___ כָּזֶה עוֹלֶה שְׁלוֹשׁ מֵאוֹת שֶׁקֶל.', a: 'sg' }, { s: 'בַּעַל הַבַּיִת אַחְרַאי עַל ___ בַּדִּירָה.', a: 'pl' }] }),
+  N('ניסיון', 'נִיסָּיוֹן', 'נִיסְיוֹנוֹת', {
+    s: [['יֵשׁ לוֹ הַרְבֵּה נִיסָּיוֹן, הוּא עוֹבֵד בַּתְּחוּם עֶשְׂרִים שָׁנָה.', 'נִיסָּיוֹן'], ['אֵין לִי נִיסָּיוֹן בְּבִישּׁוּל, אֲבָל אֲנִי לוֹמֵד.', 'נִיסָּיוֹן'], ['אַחֲרֵי כַּמָּה נִיסְיוֹנוֹת, סוֹף סוֹף הִצְלַחְתִּי לִפְתּוֹחַ אֶת הַדֶּלֶת.', 'נִיסְיוֹנוֹת']],
+    d: 'מָה שֶׁאַתָּה יוֹדֵעַ כִּי כְּבָר עָשִׂיתָ אֶת זֶה הַרְבֵּה; גַּם: פַּעַם שֶׁמְּנַסִּים לַעֲשׂוֹת מַשֶּׁהוּ', en: 'experience; also an attempt',
+    c: [{ s: 'מְחַפְּשִׂים עוֹבֵד עִם ___ בְּשֵׁירוּת לָקוֹחוֹת.', a: 'sg' }, { s: 'הוּא עָבַר אֶת הַטֶּסְט אַחֲרֵי שְׁלוֹשָׁה ___.', a: 'pl' }] }),
+  N('סיכוי', 'סִיכּוּי', 'סִיכּוּיִים', {
+    s: [['יֵשׁ סִיכּוּי שֶׁיֵּרֵד גֶּשֶׁם מָחָר.', 'סִיכּוּי'], ['אֵין סִיכּוּי שֶׁנַּגִּיעַ בַּזְּמַן, יֵשׁ פְּקָק עֲנָק.', 'סִיכּוּי'], ['הַסִּיכּוּיִים שֶׁלּוֹ לְהִתְקַבֵּל הֵם חֲמִישִּׁים־חֲמִישִּׁים.', 'הַסִּיכּוּיִים']],
+    d: 'כַּמָּה אֶפְשָׁרִי שֶׁמַּשֶּׁהוּ יִקְרֶה', en: 'a chance, likelihood',
+    c: [{ s: 'יֵשׁ ___ טוֹב שֶׁהוּא יַסְכִּים.', a: 'sg' }, { s: 'לְדַעְתִּי יֵשׁ לָנוּ ___ טוֹבִים לְנַצֵּחַ בַּמִּשְׂחָק.', a: 'pl' }] }),
+  N('שינוי', 'שִׁינּוּי', 'שִׁינּוּיִים', {
+    s: [['יֵשׁ שִׁינּוּי בַּתּוֹכְנִית: הַפְּגִישָׁה עָבְרָה לְיוֹם רְבִיעִי.', 'שִׁינּוּי'], ['עָשִׂינוּ כַּמָּה שִׁינּוּיִים בַּדִּירָה, הִיא נִרְאֵית כְּמוֹ חֲדָשָׁה.', 'שִׁינּוּיִים'], ['לַעֲבוֹר לְעִיר אַחֶרֶת זֶה שִׁינּוּי גָּדוֹל.', 'שִׁינּוּי']],
+    d: 'כְּשֶׁמַּשֶּׁהוּ נַעֲשֶׂה אַחֶרֶת מִמָּה שֶׁהָיָה', en: 'a change',
+    c: [{ s: 'צָרִיךְ לַעֲשׂוֹת ___ קָטָן בַּחוֹזֶה לִפְנֵי שֶׁחוֹתְמִים.', a: 'sg', x: ['תיקון'] }, { s: 'בַּחֶבְרָה הָיוּ הַרְבֵּה ___ הַשָּׁנָה: מְנַהֵל חָדָשׁ, מִשְׂרָד חָדָשׁ.', a: 'pl' }] }),
+  N('יתרון', 'יִתְרוֹן', 'יִתְרוֹנוֹת', {
+    s: [['הַיִּתְרוֹן שֶׁל הַדִּירָה הוּא שֶׁהִיא קְרוֹבָה לָעֲבוֹדָה.', 'הַיִּתְרוֹן'], ['לָגוּר בַּמֶּרְכָּז זֶה יִתְרוֹן גָּדוֹל, הַכֹּל קָרוֹב.', 'יִתְרוֹן'], ['לְכָל עֲבוֹדָה יֵשׁ יִתְרוֹנוֹת וְגַם דְּבָרִים פָּחוֹת טוֹבִים.', 'יִתְרוֹנוֹת']],
+    d: 'מַשֶּׁהוּ טוֹב בְּמַצָּב אוֹ בְּדָבָר, שֶׁעוֹזֵר לְךָ', en: 'an advantage',
+    c: [{ s: 'לְדַבֵּר שְׁתֵּי שָׂפוֹת זֶה ___ בָּעֲבוֹדָה.', a: 'sg' }, { s: 'לָאוֹטוֹ הֶחָדָשׁ יֵשׁ הַרְבֵּה ___: הוּא חֶסְכוֹנִי, שָׁקֵט וְנוֹחַ.', a: 'pl' }] }),
+  N('חיסרון', 'חִיסָּרוֹן', 'חֶסְרוֹנוֹת', {
+    s: [['הַחִיסָּרוֹן הַיָּחִיד שֶׁל הַדִּירָה: אֵין מַעֲלִית.', 'הַחִיסָּרוֹן'], ['זֶה מָקוֹם יָפֶה, אֲבָל הַחִיסָּרוֹן הוּא שֶׁהוּא רָחוֹק מִכֹּל.', 'הַחִיסָּרוֹן'], ['לַתּוֹכְנִית יֵשׁ יִתְרוֹנוֹת, אֲבָל גַּם הַרְבֵּה חֶסְרוֹנוֹת.', 'חֶסְרוֹנוֹת']],
+    d: 'מַשֶּׁהוּ לֹא טוֹב בְּמַצָּב אוֹ בְּדָבָר; הַהֵפֶךְ שֶׁל יִתְרוֹן', en: 'a disadvantage, drawback',
+    c: [{ s: 'הַמְּחִיר הַגָּבוֹהַּ הוּא ___ רְצִינִי.', a: 'sg' }, { s: 'הָאוֹטוֹ זוֹל, אֲבָל יֵשׁ לוֹ כַּמָּה ___: הוּא יָשָׁן וְרוֹעֵשׁ.', a: 'pl' }] }),
+  N('מטרה', 'מַטָּרָה', 'מַטָּרוֹת', {
+    s: [['הַמַּטָּרָה שֶׁלִּי הִיא לְדַבֵּר עִבְרִית בְּלִי לַחְשׁוֹב.', 'הַמַּטָּרָה'], ['מָה הַמַּטָּרָה שֶׁל הַפְּגִישָׁה?', 'הַמַּטָּרָה'], ['הוּא כָּתַב לְעַצְמוֹ שָׁלוֹשׁ מַטָּרוֹת לַשָּׁנָה הַחֲדָשָׁה.', 'מַטָּרוֹת']],
+    d: 'מָה שֶׁרוֹצִים לְהַשִּׂיג; הַסִּיבָּה שֶׁעוֹשִׂים מַשֶּׁהוּ', en: 'a goal, aim, purpose',
+    c: [{ s: 'כְּשֶׁמִּתְאַמְּנִים, צָרִיךְ ___ בְּרוּרָה.', a: 'sg' }, { s: 'הַצֶּוֶות הִשִּׂיג אֶת כָּל הַ___ שֶׁקָּבַע לְעַצְמוֹ הַשָּׁנָה.', a: 'pl' }] }),
+  N('תשלום', 'תַּשְׁלוּם', 'תַּשְׁלוּמִים', { r: 'ש-ל-מ', rel: 'לְשַׁלֵּם = to pay',
+    s: [['הַתַּשְׁלוּם עַל הַקּוּרְס הוּא בִּתְחִילַּת הַחוֹדֶשׁ.', 'הַתַּשְׁלוּם'], ['אֶפְשָׁר לְחַלֵּק אֶת הַתַּשְׁלוּם לְשָׁלוֹשׁ?', 'הַתַּשְׁלוּם'], ['קָנִיתִי אֶת הַמְּקָרֵר בִּשְׁנֵים עָשָׂר תַּשְׁלוּמִים.', 'תַּשְׁלוּמִים']],
+    d: 'כֶּסֶף שֶׁנּוֹתְנִים בִּשְׁבִיל מַשֶּׁהוּ שֶׁקּוֹנִים אוֹ מְקַבְּלִים', en: 'a payment; an installment',
+    c: [{ s: 'אֶפְשָׁר לְחַלֵּק לְכַמָּה ___?', a: 'pl' }, { s: 'עוֹד לֹא הִגִּיעַ ___ מֵהַלָּקוֹחַ.', a: 'sg', x: ['אישור'] }] }),
+  N('לחץ', 'לַחַץ', 'לְחָצִים', {
+    s: [['יֵשׁ לִי לַחַץ בָּעֲבוֹדָה, הַכֹּל צָרִיךְ לִהְיוֹת מוּכָן עַד יוֹם חֲמִישִׁי.', 'לַחַץ'], ['בְּלִי לַחַץ, תַּחְשׁוֹב עַל זֶה וְתַגִּיד לִי.', 'לַחַץ'], ['הוּא לֹא עוֹבֵד טוֹב תַּחַת לַחַץ.', 'לַחַץ']],
+    d: 'הַהַרְגָּשָׁה שֶׁיֵּשׁ יוֹתֵר מִדַּי לַעֲשׂוֹת, אוֹ שֶׁמִּישֶׁהוּ דּוֹחֵף אוֹתְךָ', en: 'pressure, stress',
+    c: [{ s: 'לִפְנֵי מִבְחָנִים יֵשׁ הַרְבֵּה ___ בַּבַּיִת.', a: 'sg' }, { s: 'הָיוּ עָלָיו ___ מִכָּל הַכִּיווּנִים לְהַסְכִּים.', a: 'pl' }] }),
+  N('תלונה', 'תְּלוּנָה', 'תְּלוּנוֹת', { r: 'ל-ו-נ', rel: 'לְהִתְלוֹנֵן = to complain',
+    s: [['יֵשׁ לִי תְּלוּנָה: הַמָּנָה הִגִּיעָה קָרָה.', 'תְּלוּנָה'], ['הַשְּׁכֵנִים הִגִּישׁוּ תְּלוּנָה עַל הָרַעַשׁ.', 'תְּלוּנָה'], ['הַמְּנַהֵל מְקַבֵּל כָּל יוֹם תְּלוּנוֹת מִלָּקוֹחוֹת.', 'תְּלוּנוֹת']],
+    d: 'מָה שֶׁאוֹמְרִים אוֹ כּוֹתְבִים כְּשֶׁמַּשֶּׁהוּ לֹא בְּסֵדֶר וְלֹא מוֹצֵא חֵן', en: 'a complaint',
+    c: [{ s: 'הַשֵּׁירוּת הָיָה גָּרוּעַ, אָז כָּתַבְתִּי ___ לַחֶבְרָה.', a: 'sg' }, { s: 'יֵשׁ יוֹתֵר מִדַּי ___ עַל הָרַעַשׁ בַּלַּיְלָה.', a: 'pl' }] }),
+  N('המלצה', 'הַמְלָצָה', 'הַמְלָצוֹת', { r: 'מ-ל-צ', rel: 'לְהַמְלִיץ = to recommend',
+    s: [['אַתָּה מַכִּיר רוֹפֵא טוֹב? אֲנִי צָרִיךְ הַמְלָצָה.', 'הַמְלָצָה'], ['הָלַכְנוּ לַמִּסְעָדָה הַזֹּאת בִּגְלַל הַהַמְלָצָה שֶׁלָּהּ.', 'הַהַמְלָצָה'], ['יֵשׁ לָהּ מִכְתַּב הַמְלָצָה מֵהַמְּנַהֶלֶת הַקּוֹדֶמֶת.', 'הַמְלָצָה']],
+    d: 'כְּשֶׁאוֹמְרִים לְמִישֶׁהוּ שֶׁמַּשֶּׁהוּ אוֹ מִישֶׁהוּ טוֹב וּכְדַאי לִבְחוֹר בּוֹ', en: 'a recommendation',
+    c: [{ s: 'יֵשׁ לְךָ ___ לְסֵפֶר טוֹב?', a: 'sg' }, { s: 'שָׁמַעְתִּי הַרְבֵּה ___ טוֹבוֹת עַל הַמָּקוֹם הַזֶּה, אָז הִזְמַנְתִּי.', a: 'pl' }] }),
+  N('אזהרה', 'אַזְהָרָה', 'אַזְהָרוֹת', { r: 'ז-ה-ר', rel: 'לְהַזְהִיר = to warn',
+    s: [['עַל הַקּוּפְסָה יֵשׁ אַזְהָרָה: לֹא לְהַשְׁאִיר לְיַד יְלָדִים.', 'אַזְהָרָה'], ['בַּמְּכוֹנִית נִדְלְקָה נוּרַת אַזְהָרָה.', 'אַזְהָרָה'], ['הִתְעַלַּמְתִּי מֵהָאַזְהָרוֹת, וְעַכְשָׁיו אֲנִי מִצְטַעֵר.', 'מֵהָאַזְהָרוֹת']],
+    d: 'הוֹדָעָה שֶׁאוֹמֶרֶת שֶׁיֵּשׁ סַכָּנָה אוֹ שֶׁצָּרִיךְ לְהִיזָּהֵר', en: 'a warning',
+    c: [{ s: 'קִיבַּלְתִּי ___ אַחֲרוֹנָה לִפְנֵי קְנָס.', a: 'sg' }, { s: 'יֵשׁ ___ עַל סוּפָה בְּסוֹף הַשָּׁבוּעַ.', a: 'pl' }] }),
+  N('הזדמנות', 'הִזְדַּמְּנוּת', 'הִזְדַּמְּנוּיּוֹת', {
+    s: [['זֹאת הִזְדַּמְּנוּת טוֹבָה לְהַכִּיר אֲנָשִׁים חֲדָשִׁים.', 'הִזְדַּמְּנוּת'], ['אַל תְּפַסְפֵּס אֶת הַהִזְדַּמְּנוּת, הַמְּחִיר לֹא יִהְיֶה כָּזֶה שׁוּב.', 'הַהִזְדַּמְּנוּת'], ['בָּעִיר הַגְּדוֹלָה יֵשׁ יוֹתֵר הִזְדַּמְּנוּיּוֹת לַעֲבוֹדָה.', 'הִזְדַּמְּנוּיּוֹת']],
+    d: 'זְמַן אוֹ מַצָּב טוֹב לַעֲשׂוֹת מַשֶּׁהוּ', en: 'an opportunity',
+    c: [{ s: 'הַחוּפְשָׁה הִיא ___ לָנוּחַ קְצָת.', a: 'sg' }, { s: 'לֹא הָיוּ לִי הַרְבֵּה ___ לְדַבֵּר עִבְרִית בָּעֲבוֹדָה.', a: 'pl', x: ['סיכוי'] }] }),
+  N('מאמץ', 'מַאֲמָץ', 'מַאֲמַצִּים', {
+    s: [['צָרִיךְ לַעֲשׂוֹת מַאֲמָץ כְּדֵי לְהַצְלִיחַ.', 'מַאֲמָץ'], ['הַמַּאֲמָץ הִשְׁתַּלֵּם: עָבַרְתִּי אֶת הַמִּבְחָן.', 'הַמַּאֲמָץ'], ['לַמְרוֹת כָּל הַמַּאֲמַצִּים, לֹא מָצָאנוּ דִּירָה.', 'הַמַּאֲמַצִּים']],
+    d: 'כּוֹחַ וּזְמַן שֶׁמַּשְׁקִיעִים כְּדֵי לַעֲשׂוֹת מַשֶּׁהוּ קָשֶׁה', en: 'an effort',
+    c: [{ s: 'זֶה לֹא דּוֹרֵשׁ הַרְבֵּה ___, רַק חָמֵשׁ דַּקּוֹת.', a: 'sg', x: ['ניסיון'] }, { s: 'הוּא עָשָׂה ___ גְּדוֹלִים לְהַגִּיעַ בַּזְּמַן.', a: 'pl' }] }),
+  N('עיכוב', 'עִיכּוּב', 'עִיכּוּבִים', { r: 'ע-כ-ב', rel: 'לְהִתְעַכֵּב = to be delayed',
+    s: [['יֵשׁ עִיכּוּב שֶׁל חֲצִי שָׁעָה בָּרַכֶּבֶת.', 'עִיכּוּב'], ['סְלִיחָה עַל הָעִיכּוּב, הָיְיתָה תַּקָּלָה בַּמַּעֲרֶכֶת.', 'הָעִיכּוּב'], ['בִּגְלַל הַשֶּׁלֶג הָיוּ עִיכּוּבִים בְּכָל הַטִּיסוֹת.', 'עִיכּוּבִים']],
+    d: 'כְּשֶׁמַּשֶּׁהוּ מַגִּיעַ אוֹ קוֹרֶה יוֹתֵר מְאוּחָר מִמָּה שֶׁתּוּכְנַן', en: 'a delay',
+    c: [{ s: 'הַטִּיסָה יָצְאָה עִם ___ שֶׁל שָׁעָה.', a: 'sg' }, { s: 'בַּפְּרוֹיֶקְט הַזֶּה הָיוּ הַרְבֵּה ___, וְהוּא נִגְמַר מְאוּחָר.', a: 'pl', x: ['שינוי', 'תקלה'] }] }),
+  N('כמות', 'כַּמּוּת', 'כַּמּוּיּוֹת', {
+    s: [['אֵיזוֹ כַּמּוּת אוֹכֶל! מִי יֹאכַל אֶת כָּל זֶה?', 'כַּמּוּת'], ['אֲנִי שׁוֹתֶה כַּמּוּת גְּדוֹלָה שֶׁל מַיִם בַּקַּיִץ.', 'כַּמּוּת'], ['הַמִּפְעָל מְיַיצֵּר כַּמּוּיּוֹת עֲנָקִיּוֹת שֶׁל שׁוֹקוֹלָד.', 'כַּמּוּיּוֹת']],
+    d: 'כַּמָּה יֵשׁ מִמַּשֶּׁהוּ', en: 'an amount, quantity',
+    c: [{ s: 'רַק ___ קְטַנָּה, בְּבַקָּשָׁה, אֲנִי לֹא רָעֵב.', a: 'sg' }, { s: 'בַּחֲתוּנָה הָיוּ ___ עֲנָקִיּוֹת שֶׁל אוֹכֶל.', a: 'pl' }] }),
+
+  A('זמין', 'זָמִין', 'זְמִינָה', 'זְמִינִים', 'זְמִינוֹת', {
+    s: [['אֲנִי לֹא זָמִין עַכְשָׁיו, אֶחְזוֹר אֵלֶיךָ אַחַר כָּךְ.', 'זָמִין'], ['הַמּוּצָר לֹא זָמִין בַּמְּלַאי, הוּא יַגִּיעַ בְּעוֹד שָׁבוּעַ.', 'זָמִין'], ['הַמַּאֲמֵן זָמִין בַּטֶּלֶפוֹן כָּל יוֹם עַד שְׁמוֹנֶה.', 'זָמִין']],
+    d: 'שֶׁאֶפְשָׁר לְהַשִּׂיג אוֹתוֹ אוֹ לְקַבֵּל אוֹתוֹ עַכְשָׁיו', en: 'available, reachable',
+    c: [{ s: 'הַמּוֹרָה לֹא ___ הַשָּׁבוּעַ, הִיא בְּחוּפְשָׁה.', a: 'fs' }, { s: 'הַנְּצִיגִים שֶׁלָּנוּ לֹא ___ כָּרֶגַע, נָא לְהַמְתִּין עַל הַקַּו.', a: 'mp' }] }),
+  A('מסובך', 'מְסוּבָּךְ', 'מְסוּבֶּכֶת', 'מְסוּבָּכִים', 'מְסוּבָּכוֹת', {
+    s: [['הַמַּתְכּוֹן הַזֶּה מְסוּבָּךְ מִדַּי בִּשְׁבִילִי.', 'מְסוּבָּךְ'], ['זֶה לֹא מְסוּבָּךְ, תַּעֲשֶׂה לְפִי הַהוֹרָאוֹת.', 'מְסוּבָּךְ'], ['הַמַּצָּב מְסוּבָּךְ, קָשֶׁה לְהַסְבִּיר בִּקְצָרָה.', 'מְסוּבָּךְ']],
+    d: 'קָשֶׁה לְהָבִין אוֹ לַעֲשׂוֹת, כִּי יֵשׁ בּוֹ הַרְבֵּה חֲלָקִים', en: 'complicated',
+    c: [{ s: 'הַבִּירוֹקְרַטְיָה פֹּה ___, יֵשׁ טְפָסִים לְכָל דָּבָר.', a: 'fs' }, { s: 'הַשְּׁאֵלוֹת בַּמִּבְחָן הָיוּ ___, אַף אֶחָד לֹא סִייֵּם.', a: 'fp' }] }),
+  A('מאוכזב', 'מְאוּכְזָב', 'מְאוּכְזֶבֶת', 'מְאוּכְזָבִים', 'מְאוּכְזָבוֹת', {
+    s: [['צִיפִּיתִי לְיוֹתֵר, אֲנִי קְצָת מְאוּכְזָב.', 'מְאוּכְזָב'], ['הַיְּלָדִים מְאוּכְזָבִים, הַטִּיּוּל בּוּטַּל בִּגְלַל הַגֶּשֶׁם.', 'מְאוּכְזָבִים'], ['הִיא הָיְיתָה מְאוּכְזֶבֶת מֵהַצִּיּוּן, הִיא רָצְתָה יוֹתֵר.', 'מְאוּכְזֶבֶת']],
+    d: 'מַרְגִּישׁ לֹא טוֹב כִּי מַשֶּׁהוּ לֹא הָיָה כְּמוֹ שֶׁרָצָה', en: 'disappointed',
+    c: [{ s: 'הָאוֹהֲדִים ___ מֵהַהֶפְסֵד.', a: 'mp' }, { s: 'אִמָּא שֶׁלִּי ___ שֶׁלֹּא בָּאתִי לַחֲגִיגָה.', a: 'fs' }] }),
+  A('מרוצה', 'מְרוּצֶּה', 'מְרוּצָּה', 'מְרוּצִּים', 'מְרוּצּוֹת', {
+    s: [['אֲנִי מְאוֹד מְרוּצֶּה מֵהַדִּירָה הַחֲדָשָׁה.', 'מְרוּצֶּה'], ['הַלָּקוֹחוֹת מְרוּצִּים, אַף אֶחָד לֹא הִתְלוֹנֵן.', 'מְרוּצִּים'], ['הַבּוֹס לֹא הָיָה מְרוּצֶּה מֵהָעֲבוֹדָה וּבִיקֵּשׁ לְתַקֵּן.', 'מְרוּצֶּה']],
+    d: 'שָׂמֵחַ מִמַּשֶּׁהוּ, כִּי הוּא כְּמוֹ שֶׁרָצָה', en: 'satisfied, pleased',
+    c: [{ s: 'הִיא מְאוֹד ___ מֵהַשֵּׁירוּת, הִיא בֶּטַח תַּחְזוֹר לְשָׁם.', a: 'fs', x: ['מאוכזב'] }, { s: 'אַתֶּם ___ מֵהַחֶדֶר?', a: 'mp', x: ['מאוכזב'] }] }),
+  A('מבולבל', 'מְבוּלְבָּל', 'מְבוּלְבֶּלֶת', 'מְבוּלְבָּלִים', 'מְבוּלְבָּלוֹת', {
+    s: [['הוּא נִרְאֶה מְבוּלְבָּל, הוּא לֹא מוֹצֵא אֶת הַדֶּרֶךְ.', 'מְבוּלְבָּל'], ['אֲנִי קְצָת מְבוּלְבָּל עִם כָּל הַזְּמַנִּים שֶׁל הַפְּעָלִים.', 'מְבוּלְבָּל'], ['אַחֲרֵי הַטִּיסָה הָיִיתִי עָיֵיף וּמְבוּלְבָּל.', 'וּמְבוּלְבָּל']],
+    d: 'לֹא מֵבִין מָה קוֹרֶה אוֹ מָה לַעֲשׂוֹת', en: 'confused',
+    c: [{ s: 'הַתַּלְמִידוֹת הָיוּ ___, הֵן לֹא הֵבִינוּ אֶת הַהוֹרָאוֹת.', a: 'fp' }, { s: 'סַבְתָּא ___ קְצָת, הִיא לֹא זוֹכֶרֶת אֵיפֹה הִיא שָׂמָה אֶת הַמִּשְׁקָפַיִים.', a: 'fs' }] }),
+  A('זהיר', 'זָהִיר', 'זְהִירָה', 'זְהִירִים', 'זְהִירוֹת', {
+    s: [['תִּהְיֶה זָהִיר, הָרִצְפָּה רְטוּבָה.', 'זָהִיר'], ['הִיא נֶהָגֶת זְהִירָה, הִיא אַף פַּעַם לֹא נוֹסַעַת מַהֵר.', 'זְהִירָה'], ['צָרִיךְ לִהְיוֹת זָהִיר עִם הַסַּכִּין הַזֹּאת, הִיא חַדָּה.', 'זָהִיר']],
+    d: 'שֶׁשָּׂם לֵב, כְּדֵי שֶׁלֹּא יִקְרֶה שׁוּם דָּבָר רַע', en: 'careful',
+    c: [{ s: 'תִּהְיוּ ___ בַּדֶּרֶךְ, יֵשׁ שֶׁלֶג.', a: 'mp' }, { s: 'תִּהְיִי ___, הַמָּרָק חַם מְאוֹד.', a: 'fs' }] }),
+  A('אחראי', 'אַחְרַאי', 'אַחְרָאִית', 'אַחְרָאִים', 'אַחְרָאִיּוֹת', {
+    s: [['מִי אַחְרַאי פֹּה? אֲנִי רוֹצֶה לְדַבֵּר אִיתּוֹ.', 'אַחְרַאי'], ['הִיא אַחְרָאִית עַל הַתַּקְצִיב בַּחֶבְרָה.', 'אַחְרָאִית'], ['הוּא יֶלֶד אַחְרַאי, אֶפְשָׁר לְהַשְׁאִיר אוֹתוֹ לְבַד.', 'אַחְרַאי']],
+    d: 'שֶׁצָּרִיךְ לִדְאוֹג לְמַשֶּׁהוּ, וְשֶׁאֶפְשָׁר לִסְמוֹךְ עָלָיו', en: 'responsible; in charge',
+    c: [{ s: 'הַהוֹרִים ___ עַל הַיְּלָדִים בַּטִּיּוּל.', a: 'mp' }, { s: 'הָאָחוֹת ___ עַל הַמַּחְלָקָה הַלַּיְלָה.', a: 'fs' }] }),
+  A('משומש', 'מְשׁוּמָּשׁ', 'מְשׁוּמֶּשֶׁת', 'מְשׁוּמָּשִׁים', 'מְשׁוּמָּשׁוֹת', {
+    s: [['זֶה לֹא חָדָשׁ, זֶה מְשׁוּמָּשׁ, אֲבָל בְּמַצָּב טוֹב.', 'מְשׁוּמָּשׁ'], ['קָנִיתִי אוֹפַנַּיִים מְשׁוּמָּשִׁים, הֵם זוֹלִים וְעוֹבְדִים טוֹב.', 'מְשׁוּמָּשִׁים'], ['בַּחֲנוּת יַד שְׁנִיָּיה מוֹכְרִים רָהִיטִים מְשׁוּמָּשִׁים.', 'מְשׁוּמָּשִׁים']],
+    d: 'שֶׁמִּישֶׁהוּ כְּבָר הִשְׁתַּמֵּשׁ בּוֹ לִפְנֵי; לֹא חָדָשׁ', en: 'used, second-hand',
+    c: [{ s: 'אֲנִי מְחַפֵּשׂ מְכוֹנִית ___ בִּמְחִיר טוֹב, לֹא חֲדָשָׁה.', a: 'fs' }, { s: 'הַסְּפָרִים בַּחֲנוּת הַזֹּאת ___, אֲבָל כְּמוֹ חֲדָשִׁים.', a: 'mp' }] }),
+  A('מסוגל', 'מְסוּגָּל', 'מְסוּגֶּלֶת', 'מְסוּגָּלִים', 'מְסוּגָּלוֹת', {
+    s: [['אֲנִי לֹא מְסוּגָּל לֶאֱכוֹל עוֹד בִּיס.', 'מְסוּגָּל'], ['הִיא מְסוּגֶּלֶת לַעֲבוֹד שְׁתֵּים עֶשְׂרֵה שָׁעוֹת בְּלִי הַפְסָקָה.', 'מְסוּגֶּלֶת'], ['הוּא מְסוּגָּל לִשְׁכּוֹחַ אֶת הַמַּפְתְּחוֹת כָּל יוֹם.', 'מְסוּגָּל']],
+    d: 'שֶׁיָּכוֹל לַעֲשׂוֹת מַשֶּׁהוּ; שֶׁיֵּשׁ לוֹ אֶת הַכּוֹחַ אוֹ אֶת הַיְּכוֹלֶת', en: 'able, capable',
+    c: [{ s: 'הַיְּלָדִים כְּבָר ___ לְהִתְלַבֵּשׁ לְבַד.', a: 'mp' }, { s: 'אֲנִי לֹא ___ לִשְׁמוֹעַ אֶת הַשִּׁיר הַזֶּה עוֹד פַּעַם.', a: 'ms' }] }),
+  A('נדיר', 'נָדִיר', 'נְדִירָה', 'נְדִירִים', 'נְדִירוֹת', {
+    s: [['שֶׁלֶג בִּירוּשָׁלַיִם זֶה דָּבָר נָדִיר.', 'נָדִיר'], ['זֶה נָדִיר לִמְצוֹא דִּירָה זוֹלָה בַּמֶּרְכָּז.', 'נָדִיר'], ['הוּא אוֹסֵף מַטְבְּעוֹת נְדִירִים מִכָּל הָעוֹלָם.', 'נְדִירִים']],
+    d: 'שֶׁלֹּא קוֹרֶה אוֹ לֹא נִמְצָא הַרְבֵּה', en: 'rare',
+    c: [{ s: 'זֹאת צִיפּוֹר ___, רוֹאִים אוֹתָהּ רַק פַּעַם בְּכַמָּה שָׁנִים.', a: 'fs' }, { s: 'בַּמּוּזֵיאוֹן יֵשׁ סְפָרִים ___ מִלִּפְנֵי חֲמֵשׁ מֵאוֹת שָׁנָה.', a: 'mp' }] }),
+
+  V('להתלונן', 'לְהִתְלוֹנֵן', 'הִתְלוֹנֵן', 'מִתְלוֹנֵן', { r: 'ל-ו-נ', rel: 'תְּלוּנָה = a complaint',
+    s: [['הוּא תָּמִיד מִתְלוֹנֵן עַל מֶזֶג הָאֲוִויר.', 'מִתְלוֹנֵן'], ['הַשְּׁכֵנָה הִתְלוֹנְנָה עַל הָרַעַשׁ בַּלַּיְלָה.', 'הִתְלוֹנְנָה'], ['אַל תִּתְלוֹנֵן, יָכוֹל הָיָה לִהְיוֹת יוֹתֵר גָּרוּעַ.', 'תִּתְלוֹנֵן']],
+    d: 'לְהַגִּיד שֶׁמַּשֶּׁהוּ לֹא בְּסֵדֶר אוֹ לֹא מוֹצֵא חֵן', en: 'to complain',
+    c: [{ s: 'אֲנִי לֹא רוֹצֶה ___, אֲבָל הָאוֹכֶל קַר.', a: 'inf' }, { s: 'הוּא ___ לַמְּנַהֵל עַל הַשֵּׁירוּת.', a: 'past' }] }),
+  V('להמליץ', 'לְהַמְלִיץ', 'הִמְלִיץ', 'מַמְלִיץ', { r: 'מ-ל-צ', rel: 'הַמְלָצָה = a recommendation',
+    s: [['אֲנִי מַמְלִיץ עַל הַמִּסְעָדָה הַזֹּאת, הָאוֹכֶל מְצוּיָּן.', 'מַמְלִיץ'], ['הָרוֹפֵא הִמְלִיץ לִי לָלֶכֶת יוֹתֵר.', 'הִמְלִיץ'], ['עַל אֵיזֶה סֵפֶר אַתָּה מַמְלִיץ? אֲנִי מְחַפֵּשׂ מַשֶּׁהוּ לִקְרוֹא.', 'מַמְלִיץ']],
+    d: 'לְהַגִּיד לְמִישֶׁהוּ שֶׁמַּשֶּׁהוּ טוֹב וּכְדַאי לוֹ', en: 'to recommend',
+    c: [{ s: 'מָה אַתָּה ___ לְהַזְמִין פֹּה?', a: 'pres' }, { s: 'חָבֵר ___ לִי עַל הַמּוּסָךְ הַזֶּה.', a: 'past' }] }),
+  V('להזהיר', 'לְהַזְהִיר', 'הִזְהִיר', 'מַזְהִיר', { r: 'ז-ה-ר', rel: 'אַזְהָרָה = a warning',
+    s: [['הִזְהַרְתִּי אוֹתְךָ שֶׁהַכְּבִישׁ יִהְיֶה עָמוּס.', 'הִזְהַרְתִּי'], ['הַמּוֹרֶה הִזְהִיר אֶת הַתַּלְמִידִים לֹא לְהַעְתִּיק בַּמִּבְחָן.', 'הִזְהִיר'], ['אֲנִי מַזְהִיר אוֹתְךָ: הַכֶּלֶב הַזֶּה נוֹשֵׁךְ.', 'מַזְהִיר']],
+    d: 'לְהַגִּיד לְמִישֶׁהוּ שֶׁיֵּשׁ סַכָּנָה, כְּדֵי שֶׁיִּיזָּהֵר', en: 'to warn',
+    c: [{ s: 'רָצִיתִי ___ אוֹתְךָ: הַמַּעֲלִית לֹא עוֹבֶדֶת.', a: 'inf' }, { s: 'הָעִירִיָּיה ___ אֶת הַתּוֹשָׁבִים מִפְּנֵי סוּפָה.', a: 'past' }] }),
+  V('להשתדל', 'לְהִשְׁתַּדֵּל', 'הִשְׁתַּדֵּל', 'מִשְׁתַּדֵּל', {
+    s: [['אֲנִי מִשְׁתַּדֵּל לְדַבֵּר רַק עִבְרִית בַּבַּיִת.', 'מִשְׁתַּדֵּל'], ['תִּשְׁתַּדֵּל לְהַגִּיעַ בַּזְּמַן הַפַּעַם.', 'תִּשְׁתַּדֵּל'], ['הִיא הִשְׁתַּדְּלָה מְאוֹד, אֲבָל לֹא הִסְפִּיקָה לְסַיֵּים.', 'הִשְׁתַּדְּלָה']],
+    d: 'לְנַסּוֹת קָשֶׁה; לַעֲשׂוֹת מַאֲמָץ', en: 'to try hard, make an effort',
+    c: [{ s: 'צָרִיךְ ___ לִישׁוֹן לְפָחוֹת שֶׁבַע שָׁעוֹת.', a: 'inf' }, { s: 'הוּא ___ לֹא לְהָעִיר אֶת הַתִּינוֹק.', a: 'past' }] }),
+  V('להסתגל', 'לְהִסְתַּגֵּל', 'הִסְתַּגֵּל', 'מִסְתַּגֵּל', {
+    s: [['לוֹקֵחַ זְמַן לְהִסְתַּגֵּל לַחוֹם שֶׁל הַקַּיִץ פֹּה.', 'לְהִסְתַּגֵּל'], ['הַיְּלָדִים הִסְתַּגְּלוּ מַהֵר לְבֵית הַסֵּפֶר הֶחָדָשׁ.', 'הִסְתַּגְּלוּ'], ['אֲנִי עוֹד מִסְתַּגֵּל לָעֲבוֹדָה הַחֲדָשָׁה, הַכֹּל שׁוֹנֶה.', 'מִסְתַּגֵּל']],
+    d: 'לְהִתְרַגֵּל לְמָקוֹם אוֹ לְמַצָּב חָדָשׁ, עַד שֶׁמַּרְגִּישִׁים טוֹב בּוֹ', en: 'to adapt, get used to',
+    c: [{ s: 'קָשֶׁה לִי ___ לַשָּׁעוֹת הַחֲדָשׁוֹת.', a: 'inf' }, { s: 'הַכֶּלֶב ___ מַהֵר לַבַּיִת הֶחָדָשׁ.', a: 'past' }] }),
+  V('להתגעגע', 'לְהִתְגַּעְגֵּעַ', 'הִתְגַּעְגֵּעַ', 'מִתְגַּעְגֵּעַ', {
+    s: [['אֲנִי מִתְגַּעְגֵּעַ לַמִּשְׁפָּחָה שֶׁלִּי.', 'מִתְגַּעְגֵּעַ'], ['הִתְגַּעְגַּעְתִּי אֵלֶיךָ, טוֹב שֶׁחָזַרְתָּ!', 'הִתְגַּעְגַּעְתִּי'], ['הִיא מִתְגַּעְגַּעַת לָאוֹכֶל שֶׁל אִמָּא שֶׁלָּהּ.', 'מִתְגַּעְגַּעַת']],
+    d: 'לְהַרְגִּישׁ עֶצֶב כִּי מִישֶׁהוּ אוֹ מַשֶּׁהוּ שֶׁאוֹהֲבִים רָחוֹק', en: 'to miss (someone or something)',
+    c: [{ s: 'אַתָּה ___ לָאוֹכֶל שֶׁל הַבַּיִת?', a: 'pres' }, { s: 'הוּא ___ לַיְּלָדִים כָּל הַשָּׁבוּעַ.', a: 'past' }] }),
+  V('להתבייש', 'לְהִתְבַּיֵּישׁ', 'הִתְבַּיֵּישׁ', 'מִתְבַּיֵּישׁ', {
+    s: [['אַל תִּתְבַּיֵּישׁ, תִּשְׁאַל אֶת הַמּוֹרֶה.', 'תִּתְבַּיֵּישׁ'], ['הוּא מִתְבַּיֵּישׁ לְדַבֵּר מוּל הַרְבֵּה אֲנָשִׁים.', 'מִתְבַּיֵּישׁ'], ['הִתְבַּיַּישְׁתִּי כְּשֶׁשָּׁכַחְתִּי אֶת הַשֵּׁם שֶׁלָּהּ.', 'הִתְבַּיַּישְׁתִּי']],
+    d: 'לְהַרְגִּישׁ לֹא נוֹחַ מוּל אֲנָשִׁים, אוֹ לְהַרְגִּישׁ רַע עַל מַשֶּׁהוּ שֶׁעָשִׂיתָ', en: 'to be shy; to be embarrassed, ashamed',
+    c: [{ s: 'הַיֶּלֶד ___ לְהַגִּיד שָׁלוֹם.', a: 'pres' }, { s: 'הוּא ___ לְבַקֵּשׁ עֶזְרָה, אָז עָשָׂה הַכֹּל לְבַד.', a: 'past' }] }),
+  V('להיעלב', 'לְהֵיעָלֵב', 'נֶעֱלַב', 'נֶעֱלָב', {
+    s: [['אַל תֵּיעָלֵב, זֶה הָיָה רַק בִּצְחוֹק.', 'תֵּיעָלֵב'], ['הִיא נֶעֶלְבָה כִּי לֹא הִזְמִינוּ אוֹתָהּ לַמְּסִיבָּה.', 'נֶעֶלְבָה'], ['הוּא נֶעֱלַב מֵהַהֶעָרָה שֶׁלְּךָ, כְּדַאי לְהִתְנַצֵּל.', 'נֶעֱלַב']],
+    d: 'לְהַרְגִּישׁ פָּגוּעַ מִמָּה שֶׁמִּישֶׁהוּ אָמַר אוֹ עָשָׂה', en: 'to be offended, hurt',
+    c: [{ s: 'הוּא ___ כְּשֶׁלֹּא שָׁאֲלוּ אֶת דַּעְתּוֹ.', a: 'past' }, { s: 'אֲנִי לֹא ___ בְּקַלּוּת, אֲבָל זֶה בֶּאֱמֶת לֹא הָיָה נֶחְמָד.', a: 'pres' }] }),
+  V('להשוות', 'לְהַשְׁווֹת', 'הִשְׁווָה', 'מַשְׁווֶה', {
+    s: [['לִפְנֵי שֶׁקּוֹנִים, כְּדַאי לְהַשְׁווֹת מְחִירִים.', 'לְהַשְׁווֹת'], ['אַל תַּשְׁווֶה אוֹתִי לְאָחִי, אֲנַחְנוּ שׁוֹנִים.', 'תַּשְׁווֶה'], ['הוּא הִשְׁווָה בֵּין שְׁתֵּי הַהַצָּעוֹת וּבָחַר בַּזּוֹלָה.', 'הִשְׁווָה']],
+    d: 'לִבְדּוֹק מָה דּוֹמֶה וּמָה שׁוֹנֶה בֵּין שְׁנֵי דְּבָרִים אוֹ יוֹתֵר', en: 'to compare',
+    c: [{ s: 'אִי אֶפְשָׁר ___ בֵּין הַקַּיִץ פֹּה לַקַּיִץ בְּאֵירוֹפָּה.', a: 'inf' }, { s: 'הוּא תָּמִיד ___ אֶת עַצְמוֹ לַאֲחֵרִים.', a: 'pres' }] }),
+
+  D('דווקא', 'דַּוְוקָא', {
+    s: [['חָשַׁבְתִּי שֶׁהַסֶּרֶט יִהְיֶה מְשַׁעְמֵם, אֲבָל הוּא דַּוְוקָא טוֹב.', 'דַּוְוקָא'], ['לָמָּה דַּוְוקָא הַיּוֹם? כָּל הַשָּׁבוּעַ הָיִיתִי פָּנוּי.', 'דַּוְוקָא'], ['דַּוְוקָא כְּשֶׁאֲנִי מְמַהֵר, הָאוֹטוֹבּוּס מְאַחֵר.', 'דַּוְוקָא']],
+    d: 'מִילָּה שֶׁאוֹמֶרֶת שֶׁמַּשֶּׁהוּ הוּא הַהֵפֶךְ מִמָּה שֶׁחָשַׁבְנוּ, אוֹ שֶׁזֶּה בְּדִיּוּק הַדָּבָר הַזֶּה וְלֹא אַחֵר', en: 'actually (contrary to what you expected); of all things, specifically',
+    c: [{ s: 'כּוּלָּם אָמְרוּ שֶׁהוּא קָשׁוּחַ, אֲבָל ___ הוּא נֶחְמָד מְאוֹד.', a: 'b', x: ['בעצם', 'בכל זאת'] }, { s: 'לָמָּה ___ אֲנִי צָרִיךְ לְסַדֵּר? שֶׁהוּא יְסַדֵּר!', a: 'b' }] }),
+  D('בינתיים', 'בֵּינְתַיִים', {
+    s: [['הָאוֹכֶל עוֹד לֹא מוּכָן, בֵּינְתַיִים תִּשְׁתּוּ מַשֶּׁהוּ.', 'בֵּינְתַיִים'], ['אֲנִי מְחַפֵּשׂ דִּירָה, וּבֵינְתַיִים אֲנִי גָּר אֵצֶל חֲבֵרִים.', 'וּבֵינְתַיִים'], ['עוֹד אֵין חֲדָשׁוֹת, בֵּינְתַיִים מְחַכִּים.', 'בֵּינְתַיִים']],
+    d: 'בַּזְּמַן שֶׁמְּחַכִּים לְמַשֶּׁהוּ; וְגַם: עַד עַכְשָׁיו', en: 'meanwhile; for now, so far',
+    c: [{ s: 'הָרוֹפֵא יִקְרָא לָךְ בְּעוֹד רֶבַע שָׁעָה, ___ תְּמַלְּאִי אֶת הַטּוֹפֶס.', a: 'b' }, { s: '___ הַכֹּל בְּסֵדֶר, נִרְאֶה מָה יִהְיֶה מָחָר.', a: 'b' }] }),
+  N('קנס', 'קְנָס', 'קְנָסוֹת', {
+    s: [['קִיבַּלְתִּי קְנָס עַל חֲנָיָיה אֲסוּרָה.', 'קְנָס'], ['אִם לֹא מַחְזִירִים אֶת הַסֵּפֶר בַּזְּמַן, צָרִיךְ לְשַׁלֵּם קְנָס.', 'קְנָס'], ['הַשּׁוֹטֵר עָצַר אוֹתִי וְנָתַן לִי קְנָס כִּי נָסַעְתִּי מַהֵר מִדַּי.', 'קְנָס']],
+    d: 'כֶּסֶף שֶׁמְּשַׁלְּמִים כְּעוֹנֶשׁ, כְּשֶׁעוֹשִׂים מַשֶּׁהוּ אָסוּר', en: 'a fine (penalty)',
+    c: [{ s: 'שָׁכַחְתִּי לְשַׁלֵּם עַל הַחֲנָיָיה, וְקִיבַּלְתִּי ___ שֶׁל מָאתַיִים וַחֲמִישִּׁים שֶׁקֶל.', a: 'sg', x: ['הנחה'] }, { s: 'הָעִירִיָּיה נוֹתֶנֶת ___ לְמִי שֶׁלֹּא אוֹסֵף אַחֲרֵי הַכֶּלֶב.', a: 'pl', x: ['אזהרה'] }] }),
+  N('עמלה', 'עֲמָלָה', 'עֲמָלוֹת', {
+    s: [['הַבַּנְק לוֹקֵחַ עֲמָלָה עַל כָּל הַעֲבָרָה.', 'עֲמָלָה'], ['קָנִיתִי כַּרְטִיסִים דֶּרֶךְ הָאֲתָר, וְשִׁילַּמְתִּי עוֹד עֲמָלָה שֶׁל עֶשְׂרִים שֶׁקֶל.', 'עֲמָלָה'], ['בַּבַּנְק הַשֵּׁנִי הָעֲמָלוֹת נְמוּכוֹת יוֹתֵר, אוּלַי כְּדַאי לַעֲבוֹר.', 'הָעֲמָלוֹת']],
+    d: 'כֶּסֶף שֶׁמְּשַׁלְּמִים לַבַּנְק אוֹ לַחֶבְרָה עַל שֵׁירוּת, נוֹסָף עַל הַמְּחִיר', en: 'a fee, commission (e.g. a bank fee)',
+    c: [{ s: 'יֵשׁ ___ עַל מְשִׁיכַת מְזוּמָּן מֵהַכַּסְפּוֹמָט?', a: 'sg', x: ['קנס', 'תשלום', 'הנחה'] }, { s: 'הַבַּנְק הַזֶּה לוֹקֵחַ ___ גְּבוֹהוֹת עַל כָּל פְּעוּלָה.', a: 'pl', x: ['קנס', 'תשלום'] }] }),
+  N('תקלה', 'תַּקָּלָה', 'תַּקָּלוֹת', {
+    s: [['יֵשׁ תַּקָּלָה בַּמַּעֲלִית, צָרִיךְ לַעֲלוֹת בַּמַּדְרֵגוֹת.', 'תַּקָּלָה'], ['בִּגְלַל תַּקָּלָה טֶכְנִית, הָרַכֶּבֶת לֹא יָצְאָה בַּזְּמַן.', 'תַּקָּלָה'], ['הַמַּחְשֵׁב הַיָּשָׁן הָיָה מָלֵא תַּקָּלוֹת, אָז קָנִיתִי חָדָשׁ.', 'תַּקָּלוֹת']],
+    d: 'בְּעָיָה פִּתְאוֹמִית שֶׁבִּגְלָלָהּ מַשֶּׁהוּ לֹא עוֹבֵד', en: 'a glitch, breakdown, technical problem',
+    c: [{ s: 'הָאֲתָר לֹא עוֹבֵד, יֵשׁ ___ בַּמַּעֲרֶכֶת.', a: 'sg', x: ['עיכוב', 'שינוי'] }, { s: 'בַּשָּׁבוּעַ הָרִאשׁוֹן הָיוּ בָּאַפְּלִיקַצְיָה הַרְבֵּה ___, אֲבָל עַכְשָׁיו הִיא עוֹבֶדֶת טוֹב.', a: 'pl', x: ['עיכוב', 'שינוי', 'תלונה'] }] }),
+  N('פיצוי', 'פִּיצּוּי', 'פִּיצּוּיִים', {
+    s: [['הַטִּיסָה בּוּטְּלָה, וְהַחֶבְרָה נָתְנָה לָנוּ פִּיצּוּי.', 'פִּיצּוּי'], ['מַגִּיעַ לְךָ פִּיצּוּי עַל הַנֵּזֶק לָאוֹטוֹ.', 'פִּיצּוּי'], ['הוּא פּוּטַּר וְקִיבֵּל פִּיצּוּיִים מֵהַחֶבְרָה.', 'פִּיצּוּיִים']],
+    d: 'כֶּסֶף אוֹ מַשֶּׁהוּ אַחֵר שֶׁמְּקַבְּלִים כְּשֶׁמִּישֶׁהוּ גָּרַם לְךָ נֵזֶק אוֹ בְּעָיָה', en: 'compensation',
+    c: [{ s: 'בִּגְלַל הָעִיכּוּב בַּטִּיסָה, קִיבַּלְנוּ ___ שֶׁל שָׁלוֹשׁ מֵאוֹת יוֹרוֹ.', a: 'sg', x: ['הנחה', 'תשלום'] }, { s: 'אַחֲרֵי עֶשֶׂר שָׁנִים בַּחֶבְרָה, הוּא פּוּטַּר וְקִיבֵּל ___ גְּבוֹהִים.', a: 'pl', x: ['תשלום'] }] }),
+  N('עדיפות', 'עֲדִיפוּת', 'עֲדִיפוּיּוֹת', {
+    s: [['בַּתּוֹר יֵשׁ עֲדִיפוּת לְנָשִׁים בְּהֵרָיוֹן.', 'עֲדִיפוּת'], ['הַבְּרִיאוּת שֶׁלְּךָ צְרִיכָה לִהְיוֹת בַּעֲדִיפוּת רִאשׁוֹנָה.', 'בַּעֲדִיפוּת'], ['כְּשֶׁיֵּשׁ כָּל כָּךְ הַרְבֵּה לַעֲשׂוֹת, צָרִיךְ לְהַחְלִיט מָה הָעֲדִיפוּיּוֹת.', 'הָעֲדִיפוּיּוֹת']],
+    d: 'מָה שֶׁבָּא קוֹדֶם, כִּי הוּא חָשׁוּב יוֹתֵר', en: 'priority; preference',
+    c: [{ s: 'בַּמִּשְׂרָה הַזֹּאת יֵשׁ ___ לְמִי שֶׁמְּדַבֵּר עֲרָבִית.', a: 'sg', x: ['הנחה', 'יתרון'] }, { s: 'יֵשׁ לָנוּ ___ שׁוֹנוֹת: הוּא רוֹצֶה לַחְסוֹךְ, וַאֲנִי רוֹצֶה לְטַיֵּיל.', a: 'pl', x: ['מטרה'] }] }),
+  N('השפעה', 'הַשְׁפָּעָה', 'הַשְׁפָּעוֹת', {
+    s: [['לַמּוֹרָה הַזֹּאת הָיְיתָה הַשְׁפָּעָה גְּדוֹלָה עָלַיי.', 'הַשְׁפָּעָה'], ['לְמֶזֶג הָאֲוִויר יֵשׁ הַשְׁפָּעָה עַל מַצַּב הָרוּחַ שֶׁלִּי.', 'הַשְׁפָּעָה'], ['עוֹד לֹא בָּרוּר מָה יִהְיוּ הַהַשְׁפָּעוֹת שֶׁל הַחוֹק הֶחָדָשׁ.', 'הַהַשְׁפָּעוֹת']],
+    d: 'כְּשֶׁמַּשֶּׁהוּ אוֹ מִישֶׁהוּ גּוֹרֵם לְשִׁינּוּי בְּמִישֶׁהוּ אוֹ בְּמַשֶּׁהוּ אַחֵר', en: 'influence, effect',
+    c: [{ s: 'לְאַבָּא שֶׁלִּי יֵשׁ ___ גְּדוֹלָה עַל הַהַחְלָטוֹת שֶׁלִּי.', a: 'sg' }, { s: 'לַחוֹק הֶחָדָשׁ יִהְיוּ ___ עַל כָּל הַמְּדִינָה.', a: 'pl' }] }),
+  N('חוב', 'חוֹב', 'חוֹבוֹת', {
+    s: [['יֵשׁ לִי חוֹב לַבַּנְק, אֲנִי מַחְזִיר קְצָת כָּל חוֹדֶשׁ.', 'חוֹב'], ['הוּא סוֹף סוֹף הֶחְזִיר אֶת הַחוֹב לְאָחִיו.', 'הַחוֹב'], ['אַחֲרֵי שֶׁהָעֵסֶק נִסְגַּר, נִשְׁאֲרוּ לוֹ הַרְבֵּה חוֹבוֹת.', 'חוֹבוֹת']],
+    d: 'כֶּסֶף שֶׁלָּקַחְתָּ מִמִּישֶׁהוּ וְעוֹד לֹא הֶחְזַרְתָּ', en: 'a debt',
+    c: [{ s: 'יֵשׁ לוֹ ___ שֶׁל עֲשֶׂרֶת אֲלָפִים שֶׁקֶל לַבַּנְק.', a: 'sg', x: ['קנס'] }, { s: 'קָשֶׁה לָהֶם לִגְמוֹר אֶת הַחוֹדֶשׁ, יֵשׁ לָהֶם ___ בְּכָל מָקוֹם.', a: 'pl', x: ['תשלום'] }] }),
+  A('מיותר', 'מְיוּתָּר', 'מְיוּתֶּרֶת', 'מְיוּתָּרִים', 'מְיוּתָּרוֹת', {
+    s: [['זֶה מְיוּתָּר, אַתָּה לֹא צָרִיךְ לְהִתְנַצֵּל.', 'מְיוּתָּר'], ['הַפְּגִישָׁה הָיְיתָה מְיוּתֶּרֶת, הָיָה אֶפְשָׁר לִשְׁלוֹחַ מֵייל.', 'מְיוּתֶּרֶת'], ['הוֹצֵאנוּ מֵהַמַּחְסָן אֶת כָּל הַדְּבָרִים הַמְּיוּתָּרִים.', 'הַמְּיוּתָּרִים']],
+    d: 'שֶׁלֹּא צָרִיךְ אוֹתוֹ; יוֹתֵר מִמָּה שֶׁצָּרִיךְ', en: 'unnecessary, superfluous',
+    c: [{ s: 'אַל תִּקְנֶה עוֹד כִּיסְאוֹת, הֵם ___, יֵשׁ לָנוּ מַסְפִּיק.', a: 'mp', x: ['משומש'] }, { s: 'הַשְּׁאֵלָה הַזֹּאת ___, הַתְּשׁוּבָה כְּתוּבָה בַּדַּף.', a: 'fs', x: ['מסובך'] }] }),
+  A('סביר', 'סָבִיר', 'סְבִירָה', 'סְבִירִים', 'סְבִירוֹת', {
+    s: [['הַמְּחִיר סָבִיר, לֹא זוֹל אֲבָל גַּם לֹא יָקָר.', 'סָבִיר'], ['זֹאת בַּקָּשָׁה סְבִירָה, אֵין סִיבָּה לְסָרֵב.', 'סְבִירָה'], ['סָבִיר שֶׁהוּא יְאַחֵר, הוּא תָּמִיד מְאַחֵר.', 'סָבִיר']],
+    d: 'הֶגְיוֹנִי, לֹא מוּגְזָם; גַּם: שֶׁכַּנִּרְאֶה יִקְרֶה', en: 'reasonable; likely',
+    c: [{ s: 'הַמְּחִירִים בַּמִּסְעָדָה הַזֹּאת ___, אֶפְשָׁר לָבוֹא בְּלִי אֵירוּעַ מְיוּחָד.', a: 'mp' }, { s: 'הַשְּׂכִירוּת פֹּה ___ יַחֲסִית לְמֶרְכַּז הָעִיר.', a: 'fs' }] }),
+  D('בכל זאת', 'בְּכָל זֹאת', {
+    s: [['הָיָה גֶּשֶׁם, אֲבָל בְּכָל זֹאת יָצָאנוּ לְטַיֵּיל.', 'בְּכָל זֹאת'], ['אָמַרְתִּי לוֹ לֹא לִקְנוֹת, וְהוּא בְּכָל זֹאת קָנָה.', 'בְּכָל זֹאת'], ['אֲנִי יוֹדֵעַ שֶׁאַתָּה עָסוּק, אֲבָל בְּכָל זֹאת, אֶפְשָׁר שְׁאֵלָה קְטַנָּה?', 'בְּכָל זֹאת']],
+    d: 'לַמְרוֹת זֶה; לַמְרוֹת מָה שֶׁנֶּאֱמַר קוֹדֶם', en: 'still, nevertheless (despite that)',
+    c: [{ s: 'הָיִיתִי עָיֵיף, אֲבָל ___ הָלַכְתִּי לַמְּסִיבָּה.', a: 'b', x: ['דווקא', 'ממילא'] }, { s: 'הָרוֹפֵא אָמַר לוֹ לָנוּחַ, אֲבָל הוּא ___ הָלַךְ לָעֲבוֹדָה.', a: 'b', x: ['דווקא', 'ממילא'] }] }),
+  D('מלכתחילה', 'מִלְּכַתְּחִילָּה', {
+    s: [['הָיִיתִי צָרִיךְ לְהַקְשִׁיב לָךְ מִלְּכַתְּחִילָּה.', 'מִלְּכַתְּחִילָּה'], ['מִלְּכַתְּחִילָּה לֹא רָצִיתִי לָבוֹא, אֲבָל בַּסּוֹף נֶהֱנֵיתִי.', 'מִלְּכַתְּחִילָּה'], ['אִם הוּא לֹא רָצָה לַעֲזוֹר, לָמָּה הוּא הִסְכִּים מִלְּכַתְּחִילָּה?', 'מִלְּכַתְּחִילָּה']],
+    d: 'מֵהַהַתְחָלָה; עוֹד לִפְנֵי שֶׁהַדָּבָר הִתְחִיל', en: 'in the first place, from the outset',
+    c: [{ s: 'הָיִיתִי צָרִיךְ לִשְׁאוֹל אוֹתְךָ ___, וְלֹא לְנַחֵשׁ.', a: 'b', x: ['בינתיים', 'בעצם'] }, { s: 'הַתּוֹכְנִית הָיְיתָה גְּרוּעָה ___, לֹא פֶּלֶא שֶׁהִיא נִכְשְׁלָה.', a: 'b', x: ['ממילא', 'בעצם'] }] }),
+  D('בדיעבד', 'בְּדִיעֲבַד', {
+    s: [['בְּדִיעֲבַד, זֹאת הָיְיתָה הַהַחְלָטָה הַנְּכוֹנָה.', 'בְּדִיעֲבַד'], ['בְּדִיעֲבַד הִתְבָּרֵר שֶׁהוּא צָדַק.', 'בְּדִיעֲבַד'], ['בִּזְמַן אֱמֶת זֶה נִרְאָה רַעְיוֹן טוֹב, אֲבָל בְּדִיעֲבַד זֹאת הָיְיתָה טָעוּת.', 'בְּדִיעֲבַד']],
+    d: 'כְּשֶׁמִּסְתַּכְּלִים אַחוֹרָה, אַחֲרֵי שֶׁהַדָּבָר כְּבָר קָרָה', en: 'in hindsight, looking back',
+    c: [{ s: '___ הָיָה עָדִיף לִנְסוֹעַ בָּרַכֶּבֶת.', a: 'b', x: ['בעצם', 'דווקא', 'מלכתחילה'] }, { s: 'אָז זֶה נִרְאָה כְּמוֹ טָעוּת, אֲבָל ___ זֶה הָיָה הַדָּבָר הֲכִי טוֹב שֶׁקָּרָה לִי.', a: 'b', x: ['בעצם', 'דווקא', 'בכל זאת'] }] })
+];
+const POS_GROUP = { noun: 'noun', adj: 'desc', adv: 'desc', verb: 'verb' };
+
+/* Per-word learning status lives in state.vocab: { [word]: { status: 'learned'|'known', rating, sentencesSeen, english, at } } */
+let voc = newSess({ mode: 'learn', idx: 0 });
+function vocabStatus() { state.vocab = state.vocab || {}; return state.vocab; }
+function unlearned() { const st = vocabStatus(); return VOCAB.filter((x) => !st[x.w]); }
+function learnedWords() { const st = vocabStatus(); return VOCAB.filter((x) => st[x.w]); }
+const markWord = (sentence, hl) => sentence.replace(hl, `<mark>${hl}</mark>`);
+
+function renderVocab() {
+  const host = document.getElementById('view-vocab');
+  host._keyHandler = null;
+  const left = unlearned().length, have = learnedWords().length;
+  const head = `<div class="row between">
+      <div class="seg" role="group" aria-label="New words mode">
+        <button class="seg-btn" type="button" data-vmode="learn" aria-pressed="${voc.mode === 'learn'}">Learn · ${left} new</button>
+        <button class="seg-btn" type="button" data-vmode="practice" aria-pressed="${voc.mode === 'practice'}">Practice · ${have}</button>
+      </div>
+    </div>`;
+  if (voc.mode === 'learn') return renderLearn(host, head);
+  return renderVocabPractice(host, head);
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-vmode]');
+  if (!b) return;
+  voc = newSess({ mode: b.dataset.vmode, idx: 0 });
+  renderVocab();
+});
+
+function renderLearn(host, head) {
+  const queue = unlearned();
+  if (!queue.length) {
+    host.innerHTML = head + `<p class="note">You've been through all ${VOCAB.length} words. Switch to Practice to use them; the ones you miss come back more often.</p>`;
+    return;
+  }
+  const it = queue[0];
+  let shown = 1, englishSeen = false;
+  const draw = (stage) => {
+    host.innerHTML = head + `
+      <div class="row between"><span class="note">Read the sentences and work out what the word means. Then check.</span>
+        <button class="btn small" type="button" id="v-known">I already know this word</button></div>
+      <div class="row"><span class="pointed" lang="he">${it.p}</span>${hearBtn(it.p, it.w)}${it.r ? `<span class="chip root">${rootLabel(it.r)}</span>` : ''}</div>
+      <ol class="v-sentences">${it.s.slice(0, shown).map(([sen, f]) => `<li><span class="sentence small" lang="he" dir="rtl">${markWord(sen, f)}</span> ${hearBtn(sen, it.w, 'Hear')}</li>`).join('')}</ol>
+      ${stage === 'read' ? `<div class="row">
+          ${shown < it.s.length ? '<button class="btn" type="button" id="v-more">Another sentence</button>' : ''}
+          <button class="btn primary" type="button" id="v-guess">I have a guess — show the meaning</button></div>` : ''}
+      ${stage === 'meaning' ? `<div class="feedback">
+          <div class="v-def" lang="he" dir="rtl">${it.d}</div>
+          ${it.rel ? `<p class="note">Root ${rootLabel(it.r)}: <span lang="he">${it.rel}</span></p>` : ''}
+          <details class="en-reveal" id="v-en"><summary>English</summary><p class="note">${it.en}</p></details>
+          <p class="note">How close was your guess?</p>
+          <div class="row">
+            <button class="btn" type="button" data-rate="right">I had it</button>
+            <button class="btn" type="button" data-rate="partly">Partly</button>
+            <button class="btn" type="button" data-rate="no">No idea</button>
+          </div></div>` : ''}`;
+    host.insertAdjacentHTML('beforeend', '<div class="cmt-row"><button class="cmt-link" type="button" id="cmt-w">Comment on this word</button></div>');
+    host.querySelector('#cmt-w').addEventListener('click', () => {
+      const shownS = it.s.slice(0, shown).map((x) => x[0]).join(' / ');
+      openComment({ title: 'A comment on this word', quote: it.p + ' — ' + stripNiqqud(it.s[0][0]), context: `Word: ${it.w}\nSentences shown: ${stripNiqqud(shownS)}` });
+    });
+    const more = host.querySelector('#v-more');
+    if (more) more.addEventListener('click', () => { shown++; logSupport({ action: 'vocab-sentence', form: it.w, n: shown }); draw('read'); });
+    const g = host.querySelector('#v-guess');
+    if (g) g.addEventListener('click', () => draw('meaning'));
+    const en = host.querySelector('#v-en');
+    if (en) en.addEventListener('toggle', () => { if (en.open && !englishSeen) { englishSeen = true; logSupport({ action: 'english', form: it.w }); } });
+    host.querySelector('#v-known').addEventListener('click', () => finish('known'));
+    host.querySelectorAll('[data-rate]').forEach((b) => b.addEventListener('click', () => finish(b.dataset.rate)));
+  };
+  const finish = (rating) => {
+    vocabStatus()[it.w] = { status: rating === 'known' ? 'known' : 'learned', rating, sentencesSeen: shown, english: englishSeen, at: new Date().toISOString() };
+    logSupport({ action: 'vocab-learn', form: it.w, rating, sentencesSeen: shown, english: englishSeen });
+    save();
+    renderVocab();
+  };
+  draw('read');
+}
+
+function renderVocabPractice(host, head) {
+  const pool = learnedWords();
+  if (pool.length < 4) {
+    host.innerHTML = head + `<p class="note">Learn at least 4 words first (you have ${pool.length}). Practice then mixes them in new sentences.</p>`;
+    return;
+  }
+  if (sessDone(voc, 10)) {
+    const missed = voc.items.filter((x) => !x.correct);
+    host.innerHTML = head + `<div class="eyebrow">Round done</div>
+      <div class="summary"><div><b>${voc.right}/10</b><span>right</span></div><div><b>${missed.length}</b><span>to review</span></div></div>
+      ${missed.length ? `<p class="note">These come back more often: <span lang="he">${[...new Set(missed.map((m) => m.answer))].join(' · ')}</span></p>` : ''}
+      <div><button class="btn primary" type="button" id="v-again">Start another round</button></div>`;
+    host.querySelector('#v-again').addEventListener('click', () => { voc = newSess({ mode: 'practice', idx: 0 }); renderVocab(); });
+    return;
+  }
+  const { it, review } = sessPick(voc, 10, pool, (x) => x.w, (x) => weight('voc|' + x.w) * (vocabStatus()[x.w].status === 'known' ? 0.5 : 1));
+  const cl = shuffle(it.c)[0];                      // { s: pointed sentence with ___, a: form key }
+  const ansP = it.forms[cl.a], ans = stripNiqqud(ansP);
+  // wrong choices: other words in the SAME form (plural with plural, feminine with feminine…), same part of speech first
+  const banned = new Set([it.w].concat(cl.x || []));
+  const withForm = pool.filter((x) => !banned.has(x.w) && x.forms[cl.a] && stripNiqqud(x.forms[cl.a]) !== ans);
+  const ordered = shuffle(withForm.filter((x) => x.pos === it.pos)).concat(shuffle(withForm.filter((x) => x.pos !== it.pos)));
+  const chosenSet = new Set([ans]);
+  for (const x of ordered) { if (chosenSet.size >= 4) break; chosenSet.add(stripNiqqud(x.forms[cl.a])); }
+  for (const x of shuffle(pool)) { if (chosenSet.size >= 4) break; if (!banned.has(x.w)) chosenSet.add(stripNiqqud(x.p)); }
+  const options = shuffle([...chosenSet]);
+  runQuestion(host, {
+    answer: ans, options,
+    headerHtml: head + `<div class="row between"><span class="note">Which word fits? It may be in a different form than you learned it.</span>${sessCounter(voc, 10, review)}</div>`,
+    promptHtml: `<div class="sentence" lang="he" dir="rtl">${cl.s.replace('___', '<span class="blank">_____</span>')}</div>`,
+    feedbackHtml: () => `
+      <div class="row"><span class="sentence small" lang="he" dir="rtl">${cl.s.replace('___', `<mark>${ansP}</mark>`)}</span>${hearBtn(cl.s.replace('___', ansP), it.w, 'Hear')}</div>
+      ${ansP !== it.p ? `<p class="note">Form used here: <span class="he">${ansP}</span> · base form: <span class="he">${it.p}</span></p>` : ''}
+      <div class="v-def" lang="he" dir="rtl">${it.d}</div>
+      <details class="en-reveal"><summary>English</summary><p class="note">${it.en}</p></details>`,
+    onAnswer: (correct, chosen, ms, msPick) => {
+      sessRecord(voc, it.w, it, review, correct, { correct, ms, chosen, answer: ans });
+      record({ mode: 'vocab', key: 'voc|' + it.w, word: it.w, form: cl.a, sentence: stripNiqqud(cl.s), chosen, answer: ans, correct, ms, msPick });
+    },
+    next: renderVocab
+  });
+}
+
+/* ---------- Tabs ---------- */
+const VIEWS = ['build', 'transform', 'siblings', 'vocab', 'guide', 'progress'];
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.view)));
+function show(view) {
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.view === view)));
+  VIEWS.forEach((v) => { document.getElementById('view-' + v).hidden = v !== view; });
+  if (view === 'progress') renderProgress();
+}
+function restartAll() {
+  build = newSess({ family: build.family }); tr = newSess({ family: tr.family }); sib = newSess();
+  renderBuild(); renderTransform(); renderSiblings();
+}
+/* ---------- Guide ---------- */
+// pointed infinitive of a verb in the drills
+const PV = (inf) => { const v = VERBS.find((x) => x.forms.inf === inf); return v ? v.p : inf; };
+// split a pointed word into letters-with-their-marks and highlight the first `pre` and last `suf` letters
+function marked(pointed, pre, suf) {
+  const parts = pointed.match(/[א-ת][֑-ׇ]*/g) || [pointed];
+  return parts.map((p, i) => (i < pre || i >= parts.length - suf ? `<span class="aff">${p}</span>` : p)).join('');
+}
+const PRON = { 'אני': 'אֲנִי', 'אתה': 'אַתָּה', 'את': 'אַתְּ', 'הוא': 'הוּא', 'היא': 'הִיא', 'אנחנו': 'אֲנַחְנוּ', 'אתם': 'אַתֶּם', 'הם': 'הֵם', 'הן': 'הֵן' };
+function endingsTable() {
+  const R = 'ד-ב-ר', B = 'piel';
+  const PAST_SUF = { 'אני': 2, 'אתה': 1, 'את': 1, 'הוא': 0, 'היא': 1, 'אנחנו': 2, 'אתם': 2, 'הם': 1 };
+  const FUT_SUF = { 'את': 1, 'אתם': 1, 'הם': 1 };
+  const item = (who, form) => `<div class="tf"><span class="pron">${who}</span><span class="form">${form}</span></div>`;
+  const past = PERSONS.map((p) => item(PRON[p], marked(vocalize(R, B, 'past', p), 0, PAST_SUF[p]))).join('');
+  const fut = PERSONS.map((p) => item(PRON[p], marked(vocalize(R, B, 'fut', p), 1, FUT_SUF[p] || 0))).join('');
+  const PRES_WHO = { 'הוא': 'אֲנִי, אַתָּה, הוּא', 'היא': 'אֲנִי, אַתְּ, הִיא', 'הם': 'אֲנַחְנוּ, אַתֶּם, הֵם', 'הן': 'אֲנַחְנוּ, אַתֶּן, הֵן' };
+  const PRES_SUF = { 'הוא': 0, 'היא': 1, 'הם': 2, 'הן': 2 };
+  const pres = PRESENT.map((p) => item(PRES_WHO[p], marked(vocalize(R, B, 'pres', p), 1, PRES_SUF[p]))).join('');
+  return `<div class="tense-grid" dir="rtl" lang="he">
+      <div class="tense-col"><h4>עָבָר</h4>${past}</div>
+      <div class="tense-col"><h4>הוֹוֶה</h4>${pres}<p class="pron-note">The present changes only for masculine or feminine, singular or plural, not for who.</p></div>
+      <div class="tense-col"><h4>עָתִיד</h4>${fut}</div>
+    </div>`;
+}
+
+function wireGuideComments(host) {
+  if (host._cmtWired) return; host._cmtWired = true;
+  host.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, summary, input, select, textarea')) return;
+    if (String(window.getSelection && window.getSelection()) !== '') return;
+    const el = e.target.closest('p, li, tr, h3');
+    if (!el || !host.contains(el)) return;
+    const heading = el.tagName === 'H3' ? '' : (() => { let n = el.closest('.table-wrap, ul, ol') || el; while (n && n.tagName !== 'H3') n = n.previousElementSibling; return n ? n.textContent.trim() : ''; })();
+    const text = (el.tagName === 'TR' ? [...el.cells].map((c) => c.textContent.trim()).join(' · ') : el.textContent).replace(/\s+/g, ' ').trim();
+    openComment({ title: 'A comment on the Guide', quote: text, context: (heading ? 'Section: ' + heading + '\n' : '') + text });
+  });
+}
+function renderGuide() {
+  document.getElementById('view-guide').innerHTML = `
+    <h2>How to spot the binyan</h2>
+    <p>Every verb belongs to one of seven binyanim (patterns); five of them have an infinitive. Remove the ל, then look at what comes right before the root letters. These clues work for regular roots; verbs with ו, י or ה in the root (<span class="he">לָקוּם, לְהַרְאוֹת</span>) often break them.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>After the ל you see</th><th>Binyan</th><th>Examples</th><th>Typical meaning</th></tr></thead>
+      <tbody>
+        <tr><td>The root directly, often with ו before the last letter</td><td class="he">פָּעַל</td><td class="he">${PV('לכתוב')}, ${PV('ללמוד')}</td><td>basic action</td></tr>
+        <tr><td>The root directly, no ו</td><td class="he">פִּעֵל</td><td class="he">${PV('לדבר')}, ${PV('לשלם')}</td><td>often a more intense or ongoing action</td></tr>
+        <tr><td>ה + root, with י before the last letter</td><td class="he">הִפְעִיל</td><td class="he">${PV('להסביר')}, ${PV('להכניס')}</td><td>often <em>causing</em> something</td></tr>
+        <tr><td>הי + root, no י near the end</td><td class="he">נִפְעַל</td><td class="he">${PV('להיכנס')}, ${PV('להיכתב')}</td><td>often passive, or something that happens to you</td></tr>
+        <tr><td>הת + root</td><td class="he">הִתְפַּעֵל</td><td class="he">${PV('להתלבש')}, ${PV('להתקשר')}</td><td>often doing it to yourself or to each other</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>One root, several binyanim</h3>
+    <ul>
+      <li><span class="he">כ-ת-ב</span>: <span class="he">${PV('לכתוב')}</span> (write) · <span class="he">${PV('להתכתב')}</span> (write to each other) · <span class="he">${PV('להכתיב')}</span> (dictate) · <span class="he">${PV('להיכתב')}</span> (be written)</li>
+      <li><span class="he">ל-ב-ש</span>: <span class="he">${PV('ללבוש')}</span> (wear) · <span class="he">${PV('להתלבש')}</span> (get dressed) · <span class="he">${PV('להלביש')}</span> (dress someone)</li>
+      <li><span class="he">כ-נ-ס</span>: <span class="he">${PV('להיכנס')}</span> (go in) · <span class="he">${PV('להכניס')}</span> (put in)</li>
+    </ul>
+
+    <h3>Three traps</h3>
+    <ul>
+      <li><strong>The ת sometimes swaps places.</strong> When the root starts with ס or ש, the ת of <span class="he">הִתְפַּעֵל</span> moves inside: <span class="he">${PV('להשתמש')}</span> (ש-מ-ש), <span class="he">${PV('להסתכל')}</span> (ס-כ-ל). After צ it becomes ט (<span class="he">לְהִצְטָרֵךְ</span>), after ז it becomes ד (<span class="he">לְהִזְדַּקֵּן</span>).</li>
+      <li><strong>A ת can belong to the root.</strong> <span class="he">${PV('להתחיל')}</span> looks like <span class="he">הִתְפַּעֵל</span>, but the root is ת-ח-ל. The י before the last letter shows it is <span class="he">הִפְעִיל</span>.</li>
+      <li><strong>Without vowels, <span class="he">פָּעַל</span> and <span class="he">פִּעֵל</span> look alike.</strong> The main clue for <span class="he">פָּעַל</span> is the ו before the last letter (<span class="he">${PV('לכתוב')}</span>); <span class="he">פִּעֵל</span> has none (<span class="he">${PV('לדבר')}</span>). In the past, <span class="he">פִּעֵל</span> usually adds י after the first root letter (<span class="he">${vocalize('ד-ב-ר', 'piel', 'past', 'הוא')}</span>).</li>
+    </ul>
+
+    <h3>Recognizing vs. producing</h3>
+    <p>When reading, the table lets you work out the binyan. When speaking, you cannot predict from the meaning alone which binyan a verb uses; the meanings above are tendencies, not rules. Each verb's binyan is learned with the verb, which is what the drills are for.</p>
+
+    <h3>Endings and prefixes, shown on ד-ב-ר</h3>
+    <p>The colored letters are the ones that tell you who and when. The rest of the word stays the same.</p>
+    ${endingsTable()}
+    <ul>
+      <li>The same endings and prefixes work in every binyan; only the middle of the word changes.</li>
+      <li>In the present, the מ at the start marks <span class="he">פִּעֵל</span>, <span class="he">הִפְעִיל</span> and <span class="he">הִתְפַּעֵל</span>. <span class="he">פָּעַל</span> and <span class="he">נִפְעַל</span> have no מ (<span class="he">${vocalize('כ-ת-ב', 'paal', 'pres', 'הוא')}</span>, <span class="he">${vocalize('כ-נ-ס', 'nifal', 'pres', 'הוא')}</span>).</li>
+      <li>In <span class="he">הִפְעִיל</span> the feminine present ends in ה instead of ת: <span class="he">${marked(vocalize('ס-ב-ר', 'hifil', 'pres', 'היא'), 1, 1)}</span>.</li>
+    </ul>
+
+    <h3>Why "think first"</h3>
+    <p>Saying the form to yourself before seeing the choices turns each question into recall instead of recognition. Recall is harder, and that effort is what builds the form into memory. It is also what speaking requires: nobody gives you four choices mid-sentence. The time shown is how long it took you to have the answer; that is the number that should fall as forms become automatic.</p>
+
+    <h3>Little letters stuck to the front of a word</h3>
+    <p>Seven letters can attach to the start of almost any word. A common memory aid is <span class="he">מֹשֶׁה וְכָלֵב</span>: מ ש ה ו כ ל ב.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Letter</th><th>Adds</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td class="he">הַ</td><td>the</td><td><span class="he">הַבַּיִת</span> the house</td></tr>
+        <tr><td class="he">וְ / וּ</td><td>and</td><td><span class="he">וּבַיִת</span> and a house</td></tr>
+        <tr><td class="he">בְּ</td><td>in, at</td><td><span class="he">בַּבַּיִת</span> in the house</td></tr>
+        <tr><td class="he">לְ</td><td>to, for</td><td><span class="he">לַבַּיִת</span> to the house</td></tr>
+        <tr><td class="he">מִ / מֵ</td><td>from (short for <span class="he">מִן</span>)</td><td><span class="he">מֵהַבַּיִת</span> from the house</td></tr>
+        <tr><td class="he">כְּ</td><td>like, as</td><td><span class="he">כְּחָבֵר</span> as a friend</td></tr>
+        <tr><td class="he">שֶׁ</td><td>that, which, who</td><td><span class="he">שֶׁאָמַרְתִּי</span> that I said</td></tr>
+        <tr><td class="he">כְּשֶׁ</td><td>when</td><td><span class="he">כְּשֶׁהִגַּעְתִּי</span> when I arrived</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><strong>They stack</strong>, read from right to left: <span class="he">וּכְשֶׁהִגַּעְתִּי</span> = <span class="he">וּ</span> (and) + <span class="he">כְּשֶׁ</span> (when) + <span class="he">הִגַּעְתִּי</span> (I arrived).</li>
+      <li><strong>After ב, ל or כ the ה of "the" disappears</strong> in writing, and its vowel moves onto the prefix: <span class="he">בַּבַּיִת</span>, not <span class="he">בְּהַבַּיִת</span>.</li>
+      <li><strong>Before peeling a letter off, check the root.</strong> In <span class="he">${vocalize('ל-ב-ש', 'paal', 'past', 'הוא')}</span> the ל is part of the root ל-ב-ש, not "to".</li>
+    </ul>
+
+    <h3>What masculine or feminine actually changes</h3>
+    <p>In English, "big" stays "big" whatever it describes. In Hebrew every noun is masculine or feminine, and that choice changes the words that go with it. It is grammar, not meaning: a table is not "male". It decides which form the words around the noun take.</p>
+    <div class="table-wrap"><table class="gender">
+      <thead><tr><th>What changes</th><th>With a masculine noun</th><th>With a feminine noun</th></tr></thead>
+      <tbody>
+        <tr><td>Adjectives (big)</td><td class="he" data-label="Masculine">סֵפֶר גָּדוֹל</td><td class="he" data-label="Feminine">מְכוֹנִית גְּדוֹלָה</td></tr>
+        <tr><td>"This"</td><td class="he" data-label="Masculine">הַסֵּפֶר הַזֶּה</td><td class="he" data-label="Feminine">הַמְּכוֹנִית הַזֹּאת</td></tr>
+        <tr><td>"It": there is no neutral word, so you say "he" or "she"</td><td class="he" data-label="Masculine">הַסֵּפֶר? הוּא עַל הַשּׁוּלְחָן.</td><td class="he" data-label="Feminine">הַמְּכוֹנִית? הִיא בַּחוּץ.</td></tr>
+        <tr><td>Present-tense verbs (costs)</td><td class="he" data-label="Masculine">הַסֵּפֶר עוֹלֶה חֲמִישִּׁים שֶׁקֶל</td><td class="he" data-label="Feminine">הַחוּלְצָה עוֹלָה חֲמִישִּׁים שֶׁקֶל</td></tr>
+        <tr><td>Past and future verbs, for "he/she/it" (arrived)</td><td class="he" data-label="Masculine">הָאוֹטוֹבּוּס הִגִּיעַ</td><td class="he" data-label="Feminine">הָרַכֶּבֶת הִגִּיעָה</td></tr>
+        <tr><td>Numbers (one, two)</td><td class="he" data-label="Masculine">סֵפֶר אֶחָד · שְׁנֵי סְפָרִים</td><td class="he" data-label="Feminine">מְכוֹנִית אַחַת · שְׁתֵּי מְכוֹנִיּוֹת</td></tr>
+        <tr><td>"Which"</td><td class="he" data-label="Masculine">אֵיזֶה סֵפֶר?</td><td class="he" data-label="Feminine">אֵיזוֹ מְכוֹנִית?</td></tr>
+        <tr><td>Plural adjectives follow the gender, not the ending</td><td class="he" data-label="Masculine">חַלּוֹנוֹת גְּדוֹלִים</td><td class="he" data-label="Feminine">שָׁנִים טוֹבוֹת</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>With people, it is the person's gender.</strong> Talking to a man: <span class="he">אַתָּה צָרִיךְ</span>; to a woman: <span class="he">אַתְּ צְרִיכָה</span>. This is why the drills ask for <span class="he">אַתָּה</span> and <span class="he">אַתְּ</span> separately.</p>
+
+    <h3>Masculine or feminine: how to tell</h3>
+    <p><strong>Two separate questions:</strong> whether a word is masculine or feminine is decided by its <em>singular</em> form. Its plural ending (־ִים or ־וֹת) usually matches, but not always; that is covered under Plurals below. For example, <span class="he">חַלּוֹן</span> is masculine, yet its plural is <span class="he">חַלּוֹנוֹת</span>.</p>
+    <ol class="steps">
+      <li><strong>Look at the ending.</strong> A noun ending in <span class="he">־ָה</span> (with קָמָץ) or in ת is usually feminine: <span class="he">יַלְדָּה, מְכוֹנִית, מַחְבֶּרֶת</span>. Exceptions: <span class="he">לַיְלָה</span> is masculine, and so are words where the ת belongs to the root: <span class="he">בַּיִת, זַיִת, שֵׁירוּת</span>.</li>
+      <li><strong>Any other ending: usually masculine</strong>: <span class="he">סֵפֶר, יֶלֶד, תַּלְמִיד, מַחְשֵׁב</span>. Words ending in <span class="he">־ֶה</span> (with סֶגּוֹל) are masculine too: <span class="he">מוֹרֶה</span> (a male teacher).</li>
+      <li><strong>Learn the feminine words with no feminine ending.</strong> Most fall into groups:
+        <ul>
+          <li>body parts that come in pairs: <span class="he">יָד, רֶגֶל, עַיִן, אוֹזֶן</span></li>
+          <li>cities and countries: <span class="he">עִיר, אֶרֶץ, יְרוּשָׁלַיִם</span></li>
+          <li>a few others worth knowing: <span class="he">אֶבֶן, דֶּרֶךְ</span></li>
+        </ul>
+      </li>
+      <li><strong>When unsure, check the adjective next to it.</strong> The adjective always shows the gender (so does a singular verb; plural verbs in the past are the same for both): <span class="he">הַסֵּפֶר גָּדוֹל</span>, <span class="he">הָעִיר גְּדוֹלָה</span>. In a dictionary, <span class="he">ז׳</span> means masculine and <span class="he">נ׳</span> means feminine.</li>
+    </ol>
+
+    <h3>Endings on nouns and adjectives</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Ending</th><th>What it does</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td class="he">־ָה, ־ת</td><td>usually feminine singular</td><td><span class="he">יַלְדָּה, מַחְבֶּרֶת</span></td></tr>
+        <tr><td class="he">־ִים</td><td>usually masculine plural</td><td><span class="he">סְפָרִים</span> books</td></tr>
+        <tr><td class="he">־וֹת</td><td>usually feminine plural</td><td><span class="he">מַחְבָּרוֹת</span> notebooks</td></tr>
+        <tr><td class="he">־ַיִים</td><td>a pair, or two of something</td><td><span class="he">עֵינַיִים</span> eyes, <span class="he">שְׁבוּעַיִים</span> two weeks</td></tr>
+        <tr><td class="he">־ִית</td><td>feminine of ־ִי adjectives; languages</td><td><span class="he">יִשְׂרְאֵלִית, עִבְרִית</span></td></tr>
+        <tr><td class="he">־וּת</td><td>turns words into abstract nouns</td><td><span class="he">יַלְדוּת</span> childhood</td></tr>
+      </tbody>
+    </table></div>
+    <p>Endings for "my, your, his…" (<span class="he">סִפְרִי</span> my book, <span class="he">סִפְרוֹ</span> his book) exist, but in everyday speech people mostly say <span class="he">הַסֵּפֶר שֶׁלִּי, הַסֵּפֶר שֶׁלּוֹ</span>.</p>
+
+    <h3>Plurals: ־ִים or ־וֹת</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Usually</th><th>Singular looks like</th><th>Plural</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>Masculine</td><td>often ends in a consonant</td><td class="he">־ִים</td><td><span class="he">סֵפֶר ← סְפָרִים</span></td></tr>
+        <tr><td>Feminine</td><td>ends in ־ָה or ־ת</td><td class="he">־וֹת</td><td><span class="he">יַלְדָּה ← יְלָדוֹת</span></td></tr>
+        <tr><td>Mixed group</td><td>men and women together</td><td class="he">־ִים</td><td><span class="he">תַּלְמִידִים</span> (boys and girls)</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Common exceptions</strong>, worth memorizing because they are everyday words:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Exception</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td>Masculine, but plural in ־וֹת</td><td class="he">מָקוֹם ← מְקוֹמוֹת · שׁוּלְחָן ← שׁוּלְחָנוֹת · חַלּוֹן ← חַלּוֹנוֹת · קִיר ← קִירוֹת · לַיְלָה ← לֵילוֹת</td></tr>
+        <tr><td>Feminine, but plural in ־ִים</td><td class="he">שָׁנָה ← שָׁנִים · מִילָּה ← מִילִּים · בֵּיצָה ← בֵּיצִים · עִיר ← עָרִים</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>The plural ending does not tell you the gender.</strong> The adjective does: <span class="he">מְקוֹמוֹת יָפִים</span> (masculine, even with ־וֹת) · <span class="he">שָׁנִים טוֹבוֹת</span> (feminine, even with ־ִים).</p>
+
+    <h3>Voice</h3>
+    <div id="voice-settings"></div>
+    <h3>Getting a better voice</h3>
+    <ul>
+      <li><strong>iPhone, iPad or Mac:</strong> in Settings, open Accessibility, then Spoken Content (on a Mac: Live Speech or Spoken Content), then Voices, then Hebrew, and download the enhanced or premium version of the Hebrew voice. Safari then uses it here.</li>
+      <li><strong>Windows:</strong> open this page in Microsoft Edge. Edge offers Microsoft's online "Natural" Hebrew voices, which are much better than the built-in Windows voice.</li>
+      <li><strong>Android:</strong> in Settings, find Text-to-speech output, choose Speech Services by Google, and install the Hebrew voice data.</li>
+    </ul>
+    <p class="note">The vowels are shown and sent to the voice, which helps it pick the right pronunciation, but voices still make mistakes. Where the voice and the vowels disagree, trust the vowels.</p>`;
+  const g = document.getElementById('view-guide');
+  g.insertAdjacentHTML('afterbegin', '<p class="cmt-hint">Tap any part to comment</p>');
+  g.querySelectorAll('p:not(.cmt-hint), li, tbody tr, h3').forEach((el) => el.classList.add('cmt-able'));
+  wireGuideComments(g);
+}
+
+
+/* ---------- Send results (to the site owner, via Netlify Forms) ---------- */
+function sendSectionHtml() {
+  return `<div class="send">
+    <h3>Send your results</h3>
+    <p class="note">This sends your answers and timings to the person who made this page, to help improve the drills. Nothing is sent unless you tap Send.</p>
+    <div class="row">
+      <label class="small" for="send-name">Your first name or a nickname (optional)</label>
+      <input id="send-name" type="text" maxlength="40" value="${savedName().replace(/"/g, '&quot;')}" autocomplete="given-name">
+    </div>
+    <div class="row">
+      <button class="btn primary" type="button" id="send-btn">Send results</button>
+      <span class="status" id="send-status"></span>
+    </div>
+  </div>`;
+}
+function summarize(log) {
+  const by = {};
+  log.forEach((x) => {
+    const k = x.mode + (x.binyan ? '|' + x.binyan : '') + (x.tense ? '|' + x.tense : '');
+    const g = by[k] || (by[k] = { n: 0, right: 0, rts: [] });
+    g.n++; if (x.correct) { g.right++; if (x.ms < PAUSE_MS) g.rts.push(x.ms); }
+  });
+  const out = {};
+  for (const k in by) out[k] = { n: by[k].n, right: by[k].right, medianMs: median(by[k].rts) };
+  return out;
+}
+
+function wireSend() {
+  const btn = document.getElementById('send-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const status = document.getElementById('send-status');
+    const name = (document.getElementById('send-name').value || '').trim().slice(0, 40);
+    keepName(name);
+    if (!state.log.length) { status.textContent = 'Answer at least one round first.'; return; }
+    btn.disabled = true; status.textContent = 'Sending…';
+    let log = state.log;
+    while (JSON.stringify(log).length > 90000) log = log.slice(Math.floor(log.length / 4));
+    const data = JSON.stringify({ sentAt: new Date().toISOString(), totalAnswers: state.log.length, includedAnswers: log.length, thinkFirst: state.settings.thinkFirst, summary: summarize(state.log), log, support: (state.support || []).slice(-200), vocab: state.vocab || {} });
+    try {
+      await netlifyPost('results', { name, summary: resultsSummaryText(), data });
+      status.textContent = `Sent ${state.log.length} answers. Thank you.`;
+    } catch (e) {
+      status.textContent = 'Could not send just now. Check your connection and try again, or use "Leave feedback" at the top.';
+    } finally { btn.disabled = false; }
+  });
+}
+
+/* ---------- Import progress copied from another browser ---------- */
+function rebuildStats() {
+  const stats = {};
+  state.log.forEach((x) => {
+    const s = stats[x.key] || (stats[x.key] = { n: 0, right: 0, recent: [] });
+    s.n++; if (x.correct) s.right++;
+    s.recent.push({ ok: x.correct, ms: x.ms >= PAUSE_MS ? null : x.ms });
+    if (s.recent.length > 4) s.recent.shift();
+  });
+  state.stats = stats;
+}
+function importData(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { return 'That text is not valid copied data. Use "Copy all data" in the other browser and paste all of it.'; }
+  if (!data || !Array.isArray(data.log)) return 'No answers found in that text.';
+  const seen = new Set(state.log.map((x) => x.at + '|' + x.key));
+  const fresh = data.log.filter((x) => x && x.at && x.key && !seen.has(x.at + '|' + x.key));
+  state.log = state.log.concat(fresh).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  if (Array.isArray(data.support)) {
+    const seenS = new Set((state.support || []).map((x) => x.at + '|' + x.action + '|' + x.form));
+    state.support = (state.support || []).concat(data.support.filter((x) => x && !seenS.has(x.at + '|' + x.action + '|' + x.form)));
+  }
+  if (data.vocab && typeof data.vocab === 'object') { const st = vocabStatus(); for (const k in data.vocab) if (!st[k]) st[k] = data.vocab[k]; }
+  rebuildStats(); save();
+  return fresh.length ? `Imported ${fresh.length} answers. The drills now adapt using your full history.` : 'Nothing new to import; those answers are already here.';
+}
+
+/* ---------- Progress ---------- */
+const MODE_LABEL = { build: 'Build', transform: 'Transform', siblings: 'Sibling verbs', spot: 'Spot (retired)' };
+const TENSE_EN = { past: 'past', pres: 'present', fut: 'future' };
+function median(xs) { if (!xs.length) return null; const s = xs.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; }
+function renderProgress() {
+  const el = document.getElementById('view-progress');
+  const log = state.log;
+  const groups = {};
+  log.forEach((x) => {
+    let k;
+    if (x.mode === 'siblings') k = `Sibling verbs · ${rootLabel(x.root)}`;
+    else if (x.mode === 'spot') k = 'Spot the binyan (retired)';
+    else if (x.mode === 'vocab') k = 'New words · practice';
+    else k = `${MODE_LABEL[x.mode]} · ${BINYAN[x.binyan].en} ${TENSE_EN[x.tense]}`;
+    const g = groups[k] || (groups[k] = { n: 0, right: 0, rts: [] });
+    g.n++; if (x.correct) { g.right++; if (x.ms < PAUSE_MS) g.rts.push(x.ms); }
+  });
+  const rows = Object.entries(groups).sort((a, b) => (a[1].right / a[1].n) - (b[1].right / b[1].n));
+  const total = log.length, right = log.filter((x) => x.correct).length;
+  const tfRts = log.filter((x) => x.correct && x.thinkFirst === true && x.ms < PAUSE_MS && x.mode !== 'spot').map((x) => x.ms);
+  const instRts = log.filter((x) => x.correct && x.thinkFirst !== true && x.ms < PAUSE_MS && x.mode !== 'spot').map((x) => x.ms);
+  const tfAcc = (flag) => { const xs = log.filter((x) => (x.thinkFirst === true) === flag && x.mode !== 'spot'); return xs.length ? `${Math.round(100 * xs.filter((x) => x.correct).length / xs.length)}% of ${xs.length}` : '—'; };
+  el.innerHTML = `
+    <div class="summary">
+      <div><b>${total}</b><span>answers so far</span></div>
+      <div><b>${total ? Math.round((right / total) * 100) : 0}%</b><span>right</span></div>
+      <div><b>${log.filter((x) => x.paused || x.ms >= PAUSE_MS).length}</b><span>pauses over 30 s, left out of times</span></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>How you answered</th><th>Right</th><th>Median time when right</th></tr></thead>
+      <tbody>
+        <tr><td>Think first, then choices</td><td class="num">${tfAcc(true)}</td><td class="num">${tfRts.length ? secs(median(tfRts)) + ' to have it' : '—'}</td></tr>
+        <tr><td>Choices shown right away</td><td class="num">${tfAcc(false)}</td><td class="num">${instRts.length ? secs(median(instRts)) + ' to answer' : '—'}</td></tr>
+      </tbody></table></div>
+    ${rows.length ? `<div class="table-wrap"><table>
+      <thead><tr><th>Area (weakest first)</th><th>Right</th><th>Median time</th><th></th></tr></thead>
+      <tbody>${rows.map(([k, g]) => {
+        const m = median(g.rts); const pct = Math.round((g.right / g.n) * 100);
+        return `<tr><td>${k}</td><td class="num">${g.right}/${g.n}</td><td class="num">${m === null ? '—' : secs(m)}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`;
+      }).join('')}</tbody></table></div>` : '<p class="note">Nothing yet. Answer a round and your weakest areas will show here.</p>'}
+    <div class="row">
+      <button class="btn primary" type="button" id="copy-log">Copy all data</button>
+      <button class="btn" type="button" id="reset">Reset progress</button>
+      <span class="status" id="prog-status"></span>
+    </div>
+    <textarea id="log-out" readonly hidden aria-label="Progress data as text"></textarea>
+    <details class="import">
+      <summary>Import progress from another browser</summary>
+      <p class="note">In the other browser, open Progress and tap "Copy all data". Paste it here. Answers already here are skipped.</p>
+      <textarea id="import-text" aria-label="Paste copied data"></textarea>
+      <div class="row"><button class="btn" type="button" id="import-btn">Import</button><span class="status" id="import-status"></span></div>
+    </details>
+    ${thinkFirstHtml()}
+    ${sendSectionHtml()}`;
+  wireSend();
+  wireThinkFirst();
+  document.getElementById('import-btn').addEventListener('click', () => {
+    const msg = importData(document.getElementById('import-text').value);
+    renderProgress();
+    document.getElementById('import-status').textContent = msg;
+  });
+  document.getElementById('copy-log').addEventListener('click', async () => {
+    const text = JSON.stringify(state, null, 2);
+    const out = document.getElementById('log-out');
+    try { await navigator.clipboard.writeText(text); document.getElementById('prog-status').textContent = `Copied ${log.length} answers.`; out.hidden = true; }
+    catch (e) { out.value = text; out.hidden = false; out.focus(); out.select(); document.getElementById('prog-status').textContent = 'Copy is blocked here. The data is selected below; copy it by hand.'; }
+  });
+  let armed = false;
+  document.getElementById('reset').addEventListener('click', (e) => {
+    if (!armed) { armed = true; e.currentTarget.textContent = 'Tap again to reset'; document.getElementById('prog-status').textContent = `This deletes ${log.length} answers from this browser.`; return; }
+    state = { log: [], stats: {}, settings: state.settings, support: [], vocab: {} }; save(); renderProgress(); renderVocab();
+  });
+}
+
+renderBuild();
+renderTransform();
+renderSiblings();
+renderGuide();
+renderVoiceSettings();
+renderVocab();
+
+/* ---------- Comments and feedback ----------
+   A pop-up like a review tool: what you're commenting on, a quick tag, your note, your name.
+   On the website build (SITE_FORMS) it is submitted to the site owner; elsewhere it opens the
+   share menu or copies the text so the person can send it themselves. */
+const SITE_FORMS = true;
+async function netlifyPost(form, fields) {
+  const body = new URLSearchParams(Object.assign({ 'form-name': form }, fields)).toString();
+  const r = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+  if (!r.ok) throw new Error('status ' + r.status);
+}
+const savedName = () => { try { return localStorage.getItem('binyan-builder-name') || ''; } catch (e) { return ''; } };
+const keepName = (n) => { try { localStorage.setItem('binyan-builder-name', n); } catch (e) {} };
+function resultsSummaryText() {
+  const log = state.log;
+  if (!log.length) return 'No answers yet.';
+  const modes = { build: 'Build the form', transform: 'Transform', siblings: 'Sibling verbs', vocab: 'New words' };
+  const lines = [];
+  for (const m in modes) {
+    const xs = log.filter((x) => x.mode === m); if (!xs.length) continue;
+    const r = xs.filter((x) => x.correct).length;
+    lines.push(`${modes[m]}: ${r}/${xs.length} right (${Math.round(100 * r / xs.length)}%)`);
+  }
+  const miss = {};
+  log.filter((x) => !x.correct).forEach((x) => { const k = x.mode === 'siblings' ? x.answer + ' (not ' + x.chosen + ')' : x.answer; miss[k] = (miss[k] || 0) + 1; });
+  const top = Object.entries(miss).sort((p, q) => q[1] - p[1]).slice(0, 8).map(([k, n]) => `${k} ×${n}`);
+  const vs = state.vocab || {}; const known = Object.values(vs).filter((v) => v.status === 'known').length, learned = Object.values(vs).filter((v) => v.status === 'learned').length;
+  if (known + learned) lines.push(`New words: knew ${known}, learned ${learned}`);
+  if (top.length) lines.push('Missed most: ' + top.join(', '));
+  return lines.join('\n');
+}
+const CMT_TAGS = ['Hebrew mistake', 'Sounds unnatural', 'Confusing', 'Too easy', 'Too hard', 'Bug', 'Idea', 'Looks good'];
+const escHtml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let cmtReturnFocus = null;
+function closeComment() { const m = document.querySelector('.modal-back'); if (m) m.remove(); if (cmtReturnFocus && cmtReturnFocus.focus) cmtReturnFocus.focus(); }
+function openComment(o) {
+  closeComment(); cmtReturnFocus = document.activeElement;
+  const general = !o.quote;
+  const tabEl = document.querySelector('.tab[aria-selected="true"]');
+  const tab = tabEl ? tabEl.textContent.trim() : '';
+  const back = document.createElement('div');
+  back.className = 'modal-back';
+  back.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="cmt-title">
+    <div class="modal-head"><h3 id="cmt-title">${escHtml(o.title || 'Leave feedback')}</h3><button class="modal-x" type="button" aria-label="Close">×</button></div>
+    ${o.quote ? `<div class="cmt-quote" dir="auto">${escHtml(o.quote)}</div>` : '<p class="note" style="margin:0">What worked, what didn\'t, or what you\'d like added.</p>'}
+    <div class="chips-pick" role="group" aria-label="Kind of comment">${CMT_TAGS.map((t) => `<button class="chip-pick" type="button" aria-pressed="false">${t}</button>`).join('')}</div>
+    <textarea id="cmt-text" rows="4" dir="auto" placeholder="${general ? 'Your thoughts…' : 'What would you change, or what is unclear?'}"></textarea>
+    <input id="cmt-name" type="text" maxlength="40" placeholder="Your name (optional)" autocomplete="given-name" value="${escHtml(savedName())}">
+    <label class="toggle" for="cmt-res"><input type="checkbox" id="cmt-res" ${general ? 'checked' : ''}> Include a short summary of my results</label>
+    <div class="modal-foot"><span class="status" id="cmt-status"></span><button class="btn primary" type="button" id="cmt-send">Send comment</button></div>
+    <textarea id="cmt-out" rows="5" hidden readonly></textarea>
+  </div>`;
+  document.body.appendChild(back);
+  const $ = (sel) => back.querySelector(sel);
+  back.addEventListener('click', (e) => { if (e.target === back) closeComment(); });
+  $('.modal-x').addEventListener('click', closeComment);
+  back.querySelectorAll('.chip-pick').forEach((c) => c.addEventListener('click', () => c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'))));
+  $('#cmt-text').focus();
+  $('#cmt-send').addEventListener('click', async () => {
+    const status = $('#cmt-status'), btn = $('#cmt-send');
+    const message = ($('#cmt-text').value || '').trim();
+    const tags = [...back.querySelectorAll('.chip-pick[aria-pressed="true"]')].map((c) => c.textContent);
+    if (!message && !tags.length) { status.textContent = 'Write something or pick a tag.'; return; }
+    const name = ($('#cmt-name').value || '').trim().slice(0, 40); keepName(name);
+    const summary = $('#cmt-res').checked ? resultsSummaryText() : '';
+    const fields = { name, tab, category: tags.join(', '), context: o.context || '', message, summary };
+    btn.disabled = true;
+    if (SITE_FORMS) {
+      try { status.textContent = 'Sending…'; await netlifyPost('feedback', fields); status.textContent = 'Sent. Thank you!'; setTimeout(closeComment, 1200); return; }
+      catch (e) { status.textContent = ''; }
+    }
+    const text = `Language Tool comment${tab ? ' · ' + tab : ''}${tags.length ? ' · ' + tags.join(', ') : ''}\n\n${o.context ? o.context + '\n\n' : ''}${message || ''}${name ? '\n— ' + name : ''}${summary ? '\n\nMy results:\n' + summary : ''}`;
+    btn.disabled = false;
+    if (navigator.share) {
+      try { await navigator.share({ text }); status.textContent = 'Thank you!'; setTimeout(closeComment, 1000); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); status.textContent = 'Copied. Paste it in a message to whoever gave you this link.'; return; }
+    catch (e) { const out = $('#cmt-out'); out.value = text; out.hidden = false; out.focus(); out.select(); status.textContent = 'Copy this and send it to whoever gave you this link.'; }
+  });
+}
+document.getElementById('fb-btn').addEventListener('click', () => openComment({ title: 'Leave feedback' }));
+</script>
+
+</body>
+</html>
