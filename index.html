@@ -1858,8 +1858,8 @@ function renderLearn(host, head) {
           <button class="btn primary" type="button" id="v-guess">I have a guess — show the meaning</button></div>` : ''}
       ${stage === 'meaning' ? `<div class="feedback">
           <div class="v-def" lang="he" dir="rtl">${it.d}</div>
-          ${it.rel ? `<p class="note">Root ${rootLabel(it.r)}: <span lang="he">${it.rel}</span></p>` : ''}
-          <details class="en-reveal" id="v-en"><summary>English</summary><p class="note">${it.en}</p></details>
+          ${it.rel ? `<p class="note">Same root (${rootLabel(it.r)}): <span lang="he">${it.rel.replace(/\s*=\s*[^;]+/g, '')}</span></p>` : ''}
+          <details class="en-reveal" id="v-en"><summary>English</summary><p class="note">${it.en}${it.rel ? `<br>${it.rel.replace(/^.*;\s*/, '')}` : ''}</p></details>
           <p class="note">How close was your guess?</p>
           <div class="row">
             <button class="btn" type="button" data-rate="right">I had it</button>
