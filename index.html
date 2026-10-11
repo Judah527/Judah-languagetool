@@ -239,7 +239,7 @@ table.gender td.he { font-size: 19px; line-height: 1.8; }
   <header>
     <div class="eyebrow">Prototype v0 · Hebrew verbs and words</div>
     <h1>Language Tool</h1>
-    <p class="lede">Build and change verb forms across binyanim, tenses and persons, choose between sibling verbs by meaning, and learn new words from context. What you get right quickly comes up less; what slows you down comes back.</p>
+    <p class="lede">Build and change Hebrew verb forms across binyanim, tenses and persons, and learn new words from context. What you get right quickly comes up less; what slows you down comes back.</p>
     <div class="feedback-row" id="fb-row"><button class="btn primary small" type="button" id="fb-btn">💬 Leave feedback</button><span class="note-inline" id="fb-note">Or tap "Comment" on any question, or any part of the Guide.</span></div>
   </header>
 
@@ -248,7 +248,6 @@ table.gender td.he { font-size: 19px; line-height: 1.8; }
     <button class="tab" role="tab" id="tab-home" aria-selected="true" data-view="home">Home</button>
     <button class="tab" role="tab" id="tab-build" aria-selected="false" data-view="build">Build the form</button>
     <button class="tab" role="tab" id="tab-transform" aria-selected="false" data-view="transform">Transform</button>
-    <button class="tab" role="tab" id="tab-siblings" aria-selected="false" data-view="siblings">Sibling verbs</button>
     <button class="tab" role="tab" id="tab-vocab" aria-selected="false" data-view="vocab">New words</button>
     <button class="tab" role="tab" id="tab-guide" aria-selected="false" data-view="guide">Guide</button>
     <button class="tab" role="tab" id="tab-progress" aria-selected="false" data-view="progress">Progress</button>
@@ -2198,7 +2197,7 @@ function renderProgress() {
 const HOME_ITEMS = [
   { view: 'build', title: 'Build the form', he: 'כָּתַב ← כָּתְבָה', text: 'You get a verb, a tense and a person. Build the right form.', mode: 'build' },
   { view: 'transform', title: 'Transform', he: 'כָּתַבְתִּי ← אֶכְתּוֹב', text: 'Change a form you see into another tense or person. The binyan stays the same.', mode: 'transform' },
-  { view: 'siblings', title: 'Sibling verbs', he: 'נִכְנַס · הִכְנִיס', text: 'Two verbs from the same root. Pick the one that fits the sentence.', mode: 'siblings' },
+  // Sibling verbs is switched off for now (its drill and data are kept for a later redesign)
   { view: 'vocab', title: 'New words', he: 'מִמֵּילָא · דַּוְוקָא', text: 'Work out new words from sentences, then practice them in different forms.', mode: 'vocab' },
   { view: 'guide', title: 'Guide', he: 'פָּעַל · פִּעֵל · הִפְעִיל', text: 'How to spot the binyan, tense endings, prefixes, masculine and feminine.' },
   { view: 'progress', title: 'Progress', he: '', text: 'What you get right, how fast, and what keeps coming back. Settings are here too.' }
