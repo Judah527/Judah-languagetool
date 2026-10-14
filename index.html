@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>Language Tool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -150,6 +151,10 @@ footer { font-size: 12.5px; color: var(--muted); max-width: 62ch; }
 .wc-btns kbd { font: 11px var(--font-mono); color: var(--muted); margin-left: 4px; }
 @media (hover: none) { .wc-btns kbd { display: none; } }
 .wc-list span { font-family: var(--font-hebrew); font-size: 18px; }
+.account-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.acct-form { display: grid; gap: 10px; }
+.acct-form input { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
+.acct-switch { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
 .tr-pair { display: grid; gap: 10px; margin: 6px 0 4px; }
 .tr-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
 .tr-line .small-he { min-width: 3.2em; }
@@ -260,6 +265,7 @@ table.gender td.he { font-size: 19px; line-height: 1.8; }
     <div class="eyebrow">Prototype v0 · Hebrew verbs and words</div>
     <h1>Language Tool</h1>
     <p class="lede">Build and change Hebrew verb forms across binyanim, tenses and persons, and learn new words from context. What you get right quickly comes up less; what slows you down comes back.</p>
+    <div class="account-row" id="acct-row" hidden></div>
     <div class="feedback-row" id="fb-row"><button class="btn primary small" type="button" id="fb-btn">💬 Leave feedback</button><span class="note-inline" id="fb-note">Or tap "Comment" on any question, or any part of the Guide.</span></div>
   </header>
 
@@ -584,7 +590,7 @@ function load() {
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) { s.settings = s.settings || { thinkFirst: true }; if (!s.settings.tfReset) { s.settings.thinkFirst = true; s.settings.tfReset = true; } return s; } } catch (e) {}
   return { log: [], stats: {}, settings: { thinkFirst: true, tfReset: true } };
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ } if (window.acctSchedule) window.acctSchedule(); }
 let state = load();
 
 function record(entry) {
@@ -2375,11 +2381,11 @@ function renderProgress() {
 
 /* ---------- Home: the menu people land on ---------- */
 const HOME_ITEMS = [
+  { view: 'guide', title: 'Guide', he: 'פָּעַל · פִּעֵל · הִפְעִיל', text: 'Start here: how to spot the binyan, tense endings, prefixes, masculine and feminine.' },
   { view: 'build', title: 'Build the form', he: 'כָּתַב ← כָּתְבָה', text: 'You get a verb, a tense and a person. Build the right form.', mode: 'build' },
   { view: 'transform', title: 'Change the tense', he: 'אֶתְמוֹל ← מָחָר', text: 'A real sentence in one tense. Pick the verb for the same sentence in another tense.', mode: 'transform' },
   // Sibling verbs is switched off for now (its drill and data are kept for a later redesign)
   { view: 'vocab', title: 'New words', he: 'מִמֵּילָא · דַּוְוקָא', text: 'Work out new words from sentences, then practice them in different forms.', mode: 'vocab' },
-  { view: 'guide', title: 'Guide', he: 'פָּעַל · פִּעֵל · הִפְעִיל', text: 'How to spot the binyan, tense endings, prefixes, masculine and feminine.' },
   { view: 'progress', title: 'Progress', he: '', text: 'What you get right, how fast, and what keeps coming back. Settings are here too.' }
 ];
 function renderHome() {
@@ -2464,6 +2470,102 @@ document.addEventListener('click', (e) => {
   showGloss(word, e.clientX, e.clientY);
 });
 window.addEventListener('scroll', closeGloss, { passive: true });
+
+/* ---------- Accounts (website only): email + password, stays signed in, progress saved to the account ----------
+   Uses Supabase Auth + one table `progress` (user_id, data, updated_at) protected by row-level security. */
+const ACCOUNT = { url: '', key: '' };   // filled in on the website build
+(function accounts() {
+  if (!ACCOUNT.url || !ACCOUNT.key || !window.supabase) return;
+  const sb = window.supabase.createClient(ACCOUNT.url, ACCOUNT.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  const row = document.getElementById('acct-row');
+  let user = null, timer = null, syncing = false;
+  const mergeInto = (a, b) => {   // union of two saved states; a wins on settings
+    const seen = new Set((a.log || []).map((x) => x.at + '|' + x.key));
+    a.log = (a.log || []).concat((b.log || []).filter((x) => x && !seen.has(x.at + '|' + x.key))).sort((p, q) => (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
+    const seenS = new Set((a.support || []).map((x) => x.at + '|' + x.action));
+    a.support = (a.support || []).concat((b.support || []).filter((x) => x && !seenS.has(x.at + '|' + x.action)));
+    a.vocab = Object.assign({}, b.vocab || {}, a.vocab || {});
+    a.wordcheck = Object.assign({}, b.wordcheck || {}, a.wordcheck || {});
+    a.settings = Object.assign({}, b.settings || {}, a.settings || {});
+    return a;
+  };
+  async function pull() {
+    const { data, error } = await sb.from('progress').select('data').eq('user_id', user.id).maybeSingle();
+    if (error) throw error;
+    if (data && data.data) { mergeInto(state, data.data); rebuildStats(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  }
+  async function push() {
+    if (!user || syncing) return; syncing = true;
+    try {
+      const copy = Object.assign({}, state, { stats: undefined });
+      await sb.from('progress').upsert({ user_id: user.id, data: copy, updated_at: new Date().toISOString() });
+    } catch (e) { /* will retry on next change */ } finally { syncing = false; }
+  }
+  window.acctSchedule = () => { if (!user) return; clearTimeout(timer); timer = setTimeout(push, 2500); };
+  window.addEventListener('pagehide', () => { if (user) push(); });
+  function drawRow() {
+    row.hidden = false;
+    row.innerHTML = user
+      ? `<span>Signed in as <strong>${escHtml(user.email)}</strong>. Your progress is saved to your account.</span><button class="acct-switch" type="button" id="acct-out">Sign out</button>`
+      : `<button class="btn small" type="button" id="acct-in">Sign in or create an account</button><span>to keep your progress on any device</span>`;
+    const b = row.querySelector('#acct-in'); if (b) b.addEventListener('click', () => openAcct('signin'));
+    const o = row.querySelector('#acct-out'); if (o) o.addEventListener('click', async () => { await push(); await sb.auth.signOut(); });
+  }
+  function openAcct(mode, note) {
+    closeComment();
+    const back = document.createElement('div'); back.className = 'modal-back';
+    const titles = { signin: 'Sign in', signup: 'Create an account', reset: 'Reset your password', newpw: 'Choose a new password' };
+    back.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="acct-title">
+      <div class="modal-head"><h3 id="acct-title">${titles[mode]}</h3><button class="modal-x" type="button" aria-label="Close">×</button></div>
+      ${note ? `<p class="note" style="margin:0">${note}</p>` : ''}
+      <form class="acct-form" novalidate>
+        ${mode !== 'newpw' ? '<input id="acct-email" type="email" placeholder="Email" autocomplete="email" required>' : ''}
+        ${mode !== 'reset' ? `<input id="acct-pw" type="password" placeholder="Password (at least 6 characters)" autocomplete="${mode === 'signin' ? 'current-password' : 'new-password'}" minlength="6" required>` : ''}
+        <div class="modal-foot"><span class="status" id="acct-status"></span><button class="btn primary" type="submit">${{ signin: 'Sign in', signup: 'Create account', reset: 'Send reset link', newpw: 'Save password' }[mode]}</button></div>
+      </form>
+      ${mode === 'signin' ? '<p class="note" style="margin:0">New here? <button class="acct-switch" type="button" data-to="signup">Create an account</button> · <button class="acct-switch" type="button" data-to="reset">Forgot password?</button></p>' : ''}
+      ${mode === 'signup' || mode === 'reset' ? '<p class="note" style="margin:0"><button class="acct-switch" type="button" data-to="signin">Back to sign in</button></p>' : ''}
+      ${mode === 'signup' ? '<p class="note" style="margin:0">Any password of 6 or more characters. Your progress on this device is added to the account.</p>' : ''}
+    </div>`;
+    document.body.appendChild(back);
+    const $ = (q) => back.querySelector(q);
+    const close = () => back.remove();
+    back.addEventListener('click', (e) => { if (e.target === back) close(); });
+    $('.modal-x').addEventListener('click', close);
+    back.querySelectorAll('[data-to]').forEach((b) => b.addEventListener('click', () => { close(); openAcct(b.dataset.to); }));
+    const first = back.querySelector('input'); if (first) first.focus();
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const st = $('#acct-status'), email = ($('#acct-email') || {}).value, pw = ($('#acct-pw') || {}).value;
+      if (mode !== 'newpw' && !/.+@.+\..+/.test(email || '')) { st.textContent = 'Enter your email.'; return; }
+      if (mode !== 'reset' && (pw || '').length < 6) { st.textContent = 'At least 6 characters.'; return; }
+      st.textContent = 'One moment…';
+      let r;
+      if (mode === 'signin') r = await sb.auth.signInWithPassword({ email, password: pw });
+      else if (mode === 'signup') r = await sb.auth.signUp({ email, password: pw });
+      else if (mode === 'reset') r = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      else r = await sb.auth.updateUser({ password: pw });
+      if (r.error) {
+        const m = r.error.message || '';
+        st.textContent = /invalid login/i.test(m) ? 'Email or password is wrong.' : /already registered/i.test(m) ? 'That email already has an account. Sign in instead.' : m;
+        return;
+      }
+      if (mode === 'reset') { st.textContent = 'Check your email for the link.'; return; }
+      if (mode === 'signup' && !r.data.session) { st.textContent = 'Check your email to confirm, then sign in.'; return; }
+      close();
+    });
+  }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    const was = user && user.id;
+    user = session ? session.user : null;
+    drawRow();
+    if (event === 'PASSWORD_RECOVERY') openAcct('newpw');
+    if (user && user.id !== was) {
+      try { await pull(); await push(); restartAll(); renderVocab(); renderHome(); } catch (e) { /* offline: keep local */ }
+    }
+  });
+  drawRow();
+})();
 renderBuild();
 renderHome();
 renderTransform();
