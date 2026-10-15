@@ -2473,7 +2473,7 @@ window.addEventListener('scroll', closeGloss, { passive: true });
 
 /* ---------- Accounts (website only): email + password, stays signed in, progress saved to the account ----------
    Uses Supabase Auth + one table `progress` (user_id, data, updated_at) protected by row-level security. */
-const ACCOUNT = { url: '', key: '' };   // filled in on the website build
+const ACCOUNT = { url: "https://zfljmaffdlsrvnfrxsba.supabase.co", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmbGptYWZmZGxzcnZuZnJ4c2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzE2OTgsImV4cCI6MjEwNzY0NzY5OH0.wpOvy4fq7Xm58w4iyahwNePamwOOqpyV60n0OopMPwc" };   // filled in on the website build
 (function accounts() {
   if (!ACCOUNT.url || !ACCOUNT.key || !window.supabase) return;
   const sb = window.supabase.createClient(ACCOUNT.url, ACCOUNT.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
