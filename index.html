@@ -2742,23 +2742,41 @@ function wireFadeSettings() {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const SPEECH = !!SR && !/Firefox/.test(navigator.userAgent);
 function listenFor(answer, also, out, btn, done) {
+  // Works with Chrome/Edge (SpeechRecognition) and Safari (webkitSpeechRecognition, which uses Apple's dictation).
+  // Safari often only delivers interim results and can stall, so: collect interim results, stop on our own timer,
+  // and judge whatever was heard when recognition ends.
   let rec;
   try { rec = new SR(); } catch (e) { out.hidden = false; out.textContent = 'Speech isn\'t available in this browser.'; return; }
-  rec.lang = 'he-IL'; rec.interimResults = false; rec.maxAlternatives = 5;
+  rec.lang = 'he-IL'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 5;
   out.hidden = false; out.className = 'say-out'; out.textContent = 'Listening… say the form.'; btn.disabled = true;
-  let finished = false;
-  rec.onresult = (ev) => {
-    finished = true;
-    const alts = [...ev.results[0]].map((a) => stripNiqqud(a.transcript.trim()));
-    const words = alts.flatMap((a) => a.split(/[^א-ת]+/)).filter(Boolean);
+  let heard = [], judged = false, errMsg = '';
+  const judge = () => {
+    if (judged) return; judged = true; clearTimeout(stopTimer); btn.disabled = false;
+    if (!heard.length) { out.textContent = errMsg || 'Didn\'t catch that. Try again, or just tap "I have it".'; return; }
+    const words = heard.flatMap((a) => stripNiqqud(a).split(/[^א-ת]+/)).filter(Boolean);
     const ok = words.includes(answer) || also.some((x) => words.includes(x));
     out.className = 'say-out ' + (ok ? 'good' : 'bad');
-    out.innerHTML = ok ? `Heard <span class="he">${answer}</span> ✓` : `Heard <span class="he">${alts[0] || '…'}</span>. Now pick from the choices.`;
-    done(ok, alts[0] || '');
+    out.innerHTML = ok ? `Heard <span class="he">${answer}</span> ✓` : `Heard <span class="he">${stripNiqqud(heard[0])}</span>. Now pick from the choices.`;
+    done(ok, heard[0] || '');
   };
-  rec.onerror = (ev) => { finished = true; btn.disabled = false; out.textContent = ev.error === 'not-allowed' ? 'Microphone permission was blocked.' : 'Didn\'t catch that. Try again, or just tap "I have it".'; };
-  rec.onend = () => { btn.disabled = false; if (!finished) out.textContent = 'Didn\'t catch that. Try again, or just tap "I have it".'; };
-  rec.start();
+  rec.onresult = (ev) => {
+    const alts = [];
+    for (let i = 0; i < ev.results.length; i++) for (let j = 0; j < ev.results[i].length; j++) { const t = (ev.results[i][j].transcript || '').trim(); if (t) alts.push(t); }
+    if (alts.length) heard = alts;
+    clearTimeout(quietTimer); quietTimer = setTimeout(() => { try { rec.stop(); } catch (e) {} }, 1200);
+    if ([...ev.results].some((r) => r.isFinal)) { try { rec.stop(); } catch (e) {} }
+  };
+  rec.onerror = (ev) => {
+    errMsg = ev.error === 'not-allowed' || ev.error === 'service-not-allowed'
+      ? (/Safari/.test(navigator.userAgent) && !/Chrome|Edg/.test(navigator.userAgent)
+        ? 'Safari needs microphone access for this site, and Dictation turned on (Settings → General → Keyboard → Enable Dictation, with Hebrew).'
+        : 'Microphone permission was blocked.')
+      : ev.error === 'language-not-supported' ? 'Hebrew speech recognition isn\'t available on this device. Add Hebrew dictation in your keyboard settings.' : '';
+  };
+  rec.onend = judge;
+  let quietTimer = null;
+  const stopTimer = setTimeout(() => { try { rec.stop(); } catch (e) {} setTimeout(judge, 800); }, 7000);
+  try { rec.start(); } catch (e) { judged = true; btn.disabled = false; out.textContent = 'Couldn\'t start the microphone. Try again.'; }
 }
 
 renderBuild();
