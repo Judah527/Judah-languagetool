@@ -155,6 +155,29 @@ footer { font-size: 12.5px; color: var(--muted); max-width: 62ch; }
 .acct-form { display: grid; gap: 10px; }
 .acct-form input { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
 .acct-switch { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
+.root-fam { display: grid; gap: 6px; margin: 10px 0; padding-top: 10px; border-top: 1px dashed var(--line); }
+.root-members { display: flex; flex-wrap: wrap; gap: 6px 12px; font-family: var(--font-hebrew); font-size: 18px; }
+.rm { display: inline-flex; align-items: center; gap: 4px; }
+.rm::before { font-size: 11px; }
+.rm-known::before { content: '●'; color: var(--good); } .rm-learning::before { content: '◐'; color: var(--root); } .rm-new::before { content: '○'; color: var(--muted); }
+.rm-self { text-decoration: underline; text-underline-offset: 4px; }
+.root-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+.root-card { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); }
+.root-card summary { display: flex; justify-content: space-between; align-items: baseline; cursor: pointer; list-style: none; }
+.root-card summary::-webkit-details-marker { display: none; }
+.rc-root { font-family: var(--font-hebrew); font-size: 20px; } .rc-n { font: 12px var(--font-mono); color: var(--muted); }
+.rc-known { border-color: var(--good); background: var(--good-soft); } .rc-learning { border-color: var(--root); }
+.root-card .root-members { margin-top: 8px; font-size: 16px; }
+.more-detail > summary { cursor: pointer; } .more-detail > summary h3 { display: inline; }
+.speed-up { color: var(--good); font-weight: 600; font-size: 14px; margin: 4px 0; }
+.wk-bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; margin: 10px 0 4px; }
+.wk { flex: 1; max-width: 56px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; font-size: 11px; color: var(--muted); }
+.wk-bar { width: 70%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 3px; }
+.wk b { font: 11px var(--font-mono); color: var(--ink); }
+.wf { border-bottom: 1px dotted var(--muted); cursor: pointer; }
+.wf-on { border-bottom-color: transparent; }
+.say-out { margin: 8px 0; font-size: 15px; } .say-out.good { color: var(--good); } .say-out.bad { color: var(--muted); }
+.home-roots { margin: 0; font-size: 15px; }
 .tr-pair { display: grid; gap: 10px; margin: 6px 0 4px; }
 .tr-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
 .tr-line .small-he { min-width: 3.2em; }
@@ -625,11 +648,13 @@ const secs = (ms) => (ms / 1000).toFixed(1) + ' s';
 /* ---------- Think-first setting (lives in the Progress tab) ---------- */
 function thinkFirstHtml() {
   return `<div class="settings"><h3>Settings</h3>
-    <label class="toggle" for="think-first"><input type="checkbox" id="think-first" ${state.settings.thinkFirst ? 'checked' : ''}> Think of the answer before seeing the choices (recommended)</label></div>`;
+    <label class="toggle" for="think-first"><input type="checkbox" id="think-first" ${state.settings.thinkFirst ? 'checked' : ''}> Think of the answer before seeing the choices (recommended)</label>
+    ${fadeSettingsHtml()}</div>`;
 }
 function wireThinkFirst() {
   const tf = document.getElementById('think-first');
   if (tf) tf.addEventListener('change', () => { state.settings.thinkFirst = tf.checked; save(); restartAll(); });
+  wireFadeSettings();
 }
 
 /* ---------- Shared question flow ----------
@@ -638,7 +663,7 @@ function wireThinkFirst() {
 function runQuestion(host, q) {
   const think = state.settings.thinkFirst;
   host.innerHTML = q.headerHtml + q.promptHtml + `
-    ${think ? '<div><button class="btn primary" type="button" id="reveal">I have it — show choices</button> <span class="note-inline">Say the form to yourself first. Shortcut: Enter.</span></div>' : ''}
+    ${think ? `<div class="row"><button class="btn primary" type="button" id="reveal">I have it — show choices</button>${q.sayable && SPEECH ? '<button class="btn" type="button" id="say">Say it aloud</button>' : ''} <span class="note-inline">${q.sayable && SPEECH ? 'Say the form out loud, or to yourself.' : 'Say the form to yourself first.'} Shortcut: Enter.</span></div><div class="say-out" id="say-out" hidden></div>` : ''}
     <div class="options ${q.optionsClass || ''}" id="options" ${think ? 'hidden' : ''}>${q.options.map((o, i) => `<button class="opt" type="button" id="opt-${i}" data-f="${o}" lang="he">${o}</button>`).join('')}</div>
     <div id="feedback"></div>
     <div class="cmt-row"><button class="cmt-link" type="button" id="cmt-q">Comment on this question</button></div>`;
@@ -652,7 +677,11 @@ function runQuestion(host, q) {
   let tThink = null, done = false;
   const optsEl = host.querySelector('#options');
   const reveal = () => { if (tThink !== null) return; tThink = performance.now() - t0; optsEl.hidden = false; const rb = host.querySelector('#reveal'); if (rb) rb.parentElement.remove(); };
-  if (think) { const rb = host.querySelector('#reveal'); rb.addEventListener('click', reveal); rb.focus(); }
+  if (think) { const rb = host.querySelector('#reveal'); rb.addEventListener('click', reveal); rb.focus();
+    const sb = host.querySelector('#say');
+    if (sb) sb.addEventListener('click', () => listenFor(q.answer, q.sayAlso || [], host.querySelector('#say-out'), sb, (heardOk, heard) => {
+      logSupport({ action: 'say', form: q.answer, heard, ok: heardOk }); reveal();
+    })); }
   else tThink = 0;
   host._keyHandler = (e) => {
     if (e.key === 'Enter' && think && tThink === null) { e.preventDefault(); reveal(); }
@@ -673,7 +702,11 @@ function runQuestion(host, q) {
       <div class="verdict ${correct ? 'good' : 'bad'}">${correct ? 'Right' : 'Not quite'} · ${think ? 'thinking ' : ''}${paused ? 'over 30 s, not counted for speed' : secs(ms)}</div>
       ${q.feedbackHtml(correct)}
       <div><button class="btn primary" type="button" id="next">Next</button></div>`;
+    const speedHtml = q.speedKey && !paused ? speedLine(q.speedKey, ms, correct) : '';
     q.onAnswer(correct, chosen, ms, msPick);
+    if (speedHtml) fb.querySelector('.verdict').insertAdjacentHTML('afterend', speedHtml);
+    if (q.root) fb.insertAdjacentHTML('beforeend', rootFamilyHtml(q.root, q.rootSelf));
+    const nb = fb.querySelector('#next'); if (nb) fb.appendChild(nb.parentElement);
     host.querySelector('#next').addEventListener('click', q.next);
     host.querySelector('#next').focus();
   }));
@@ -762,7 +795,7 @@ function renderBuild() {
   const { answer, options } = makeOptions(slot);
   const v = slot.v;
   runQuestion(host, {
-    answer, options,
+    answer, options, speedKey: slotKey(slot), sayable: true, root: v.root, rootSelf: v.forms.inf,
     headerHtml: `<div class="row between">${familySelect('family-build', build.family)}${sessCounter(build, ROUND, review)}</div>`,
     promptHtml: `
       <div class="anchor"><span class="inf" lang="he">${v.p}</span>${hearBtn(v.p, v.forms.inf, 'Hear')}<button class="btn small" type="button" data-act="reveal-meaning" data-form="${v.forms.inf}">English</button><span class="meaning" hidden>${v.e}</span></div>
@@ -879,7 +912,7 @@ function renderTransform() {
   const srcPointed = vocalize(v.root, v.b, it.from, it.pf, v.o);
   const dstPointed = vocalize(v.root, v.b, it.to, it.pt, v.o);
   runQuestion(host, {
-    answer, options: shuffle([...new Set(options)]),
+    answer, options: shuffle([...new Set(options)]), speedKey: it.key, sayable: true, root: v.root, rootSelf: v.forms.inf,
     headerHtml: `<div class="row between">${familySelect('family-tr', tr.family)}${sessCounter(tr, ROUND, review)}</div>`,
     promptHtml: `
       <p class="note">Same sentence, same person, different time. Which form fits?</p>
@@ -1948,12 +1981,12 @@ function renderLearn(host, head) {
       <div class="row between"><span class="note">Read the sentences and work out what the word means. Then check. Tap any other word you don't know.</span>
         <button class="btn small" type="button" id="v-known">I already know this word</button></div>
       <div class="row"><span class="pointed" lang="he">${it.p}</span>${hearBtn(it.p, it.w)}${it.r ? `<span class="chip root">${rootLabel(it.r)}</span>` : ''}</div>
-      <ol class="v-sentences">${vocabExamples(it).slice(0, shown).map(([sen, f]) => `<li><span class="sentence small" lang="he" dir="rtl">${markWord(sen, f)}</span> ${hearBtn(sen, it.w, 'Hear')}</li>`).join('')}</ol>
+      <ol class="v-sentences">${vocabExamples(it).slice(0, shown).map(([sen, f]) => `<li><span class="sentence small" lang="he" dir="rtl">${markWord(fadeNiqqud(sen, f), f)}</span> ${hearBtn(sen, it.w, 'Hear')}</li>`).join('')}</ol>
       ${stage === 'read' ? `<div class="row">
           ${shown < vocabExamples(it).length ? '<button class="btn" type="button" id="v-more">Another sentence</button>' : ''}
           <button class="btn primary" type="button" id="v-guess">I have a guess — show the meaning</button></div>` : ''}
       ${stage === 'meaning' ? `<div class="feedback">
-          <div class="v-def" lang="he" dir="rtl">${it.d}</div>
+          <div class="v-def" lang="he" dir="rtl">${fadeNiqqud(it.d)}</div>
           ${it.rel ? `<p class="note">Same root (${rootLabel(it.r)}): <span lang="he">${it.rel.replace(/\s*=\s*[^;]+/g, '')}</span></p>` : ''}
           <details class="en-reveal" id="v-en"><summary>English</summary><p class="note">${it.en}${it.rel ? `<br>${it.rel.replace(/^.*;\s*/, '')}` : ''}</p></details>
           <p class="note">How close was your guess?</p>
@@ -2012,14 +2045,14 @@ function renderVocabPractice(host, head) {
   for (const x of shuffle(pool)) { if (chosenSet.size >= 4) break; if (!banned.has(x.w)) chosenSet.add(stripNiqqud(x.p)); }
   const options = shuffle([...chosenSet]);
   runQuestion(host, {
-    answer: ans, options,
+    answer: ans, options, speedKey: 'voc|' + it.w, root: it.r || null, rootSelf: it.w,
     headerHtml: head + `<div class="row between"><span class="note">Which word fits? It may be in a different form than you learned it.</span>${sessCounter(voc, 10, review)}</div>`,
-    promptHtml: `<div class="sentence" lang="he" dir="rtl">${cl.s.replace('___', '<span class="blank">_____</span>')}</div>`,
+    promptHtml: `<div class="sentence" lang="he" dir="rtl">${fadeNiqqud(cl.s).replace('___', '<span class="blank">_____</span>')}</div>`,
     feedbackHtml: () => `
-      <div class="row"><span class="sentence small" lang="he" dir="rtl">${cl.s.replace('___', `<mark>${ansP}</mark>`)}</span>${hearBtn(cl.s.replace('___', ansP), it.w, 'Hear')}</div>
+      <div class="row"><span class="sentence small" lang="he" dir="rtl">${fadeNiqqud(cl.s).replace('___', `<mark>${ansP}</mark>`)}</span>${hearBtn(cl.s.replace('___', ansP), it.w, 'Hear')}</div>
       ${ansP !== it.p ? `<p class="note">Form used here: <span class="he">${ansP}</span> · base form: <span class="he">${it.p}</span></p>` : ''}
-      <div class="v-def" lang="he" dir="rtl">${it.d}</div>
-      <ol class="v-sentences v-more-list">${vocabExamples(it).filter(([sen]) => stripNiqqud(sen) !== stripNiqqud(cl.s.replace('___', ansP))).map(([sen, f]) => `<li hidden><span class="sentence small" lang="he" dir="rtl">${markWord(sen, f)}</span> ${hearBtn(sen, it.w, 'Hear')}</li>`).join('')}</ol>
+      <div class="v-def" lang="he" dir="rtl">${fadeNiqqud(it.d)}</div>
+      <ol class="v-sentences v-more-list">${vocabExamples(it).filter(([sen]) => stripNiqqud(sen) !== stripNiqqud(cl.s.replace('___', ansP))).map(([sen, f]) => `<li hidden><span class="sentence small" lang="he" dir="rtl">${markWord(fadeNiqqud(sen, f), f)}</span> ${hearBtn(sen, it.w, 'Hear')}</li>`).join('')}</ol>
       <div class="row"><button class="btn small" type="button" data-act="vmore" data-form="${it.w}">More example sentences</button></div>
       <details class="en-reveal"><summary>English</summary><p class="note">${it.en}</p></details>`,
     onAnswer: (correct, chosen, ms, msPick) => {
@@ -2332,6 +2365,9 @@ function renderProgress() {
       <div><b>${total ? Math.round((right / total) * 100) : 0}%</b><span>right</span></div>
       <div><b>${log.filter((x) => x.paused || x.ms >= PAUSE_MS).length}</b><span>pauses over 30 s, left out of times</span></div>
     </div>
+    ${rootsSection()}
+    ${speedSection()}
+    <details class="more-detail"><summary><h3>Detailed results</h3></summary>
     <div class="table-wrap"><table>
       <thead><tr><th>How you answered</th><th>Right</th><th>Median time when right</th></tr></thead>
       <tbody>
@@ -2344,6 +2380,7 @@ function renderProgress() {
         const m = median(g.rts); const pct = Math.round((g.right / g.n) * 100);
         return `<tr><td>${k}</td><td class="num">${g.right}/${g.n}</td><td class="num">${m === null ? '—' : secs(m)}</td><td><div class="bar"><i style="width:${pct}%"></i></div></td></tr>`;
       }).join('')}</tbody></table></div>` : '<p class="note">Nothing yet. Answer a round and your weakest areas will show here.</p>'}
+    </details>
     <div class="row">
       <button class="btn primary" type="button" id="copy-log">Copy all data</button>
       <button class="btn" type="button" id="reset">Reset progress</button>
@@ -2395,6 +2432,7 @@ function renderHome() {
   host.innerHTML = `
     ${fresh ? `<p class="home-start"><strong>New here?</strong> Start with <a href="#" data-go="guide">How to spot the binyan</a> in the Guide (two minutes), then try <a href="#" data-go="build">Build the form</a>. The drills adapt to you as you go.</p>`
       : `<p class="home-intro">Pick up where you left off, or try something new. What you get right quickly comes up less; what slows you down comes back.</p>`}
+    ${(() => { const r = rootSummary(); return r.known ? `<p class="home-roots">You know <strong>${r.known}</strong> roots, which give you <strong>${r.words}</strong> words in this app. <a href="#" data-go="progress">See your roots</a></p>` : ''; })()}
     <p class="home-intro">Tip: tap any word in a Hebrew sentence to see what it means.</p>
     <div class="home-grid">${HOME_ITEMS.map((it) => {
       const n = it.mode ? count(it.mode) : 0;
@@ -2566,6 +2604,163 @@ const ACCOUNT = { url: "https://zfljmaffdlsrvnfrxsba.supabase.co", key: "eyJhbGc
   });
   drawRow();
 })();
+
+/* ======================================================================
+   Roots, fading nekudot, speed
+   ====================================================================== */
+const SOFIT_BACK = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+const normRoot = (r) => (r || '').replace(/[ךםןףץ]/g, (c) => SOFIT_BACK[c]);
+/* root -> members (verbs in every binyan + vocabulary words) */
+const ROOT_FAMILY = {};
+VERBS.forEach((v) => { const r = normRoot(v.root); (ROOT_FAMILY[r] = ROOT_FAMILY[r] || []).push({ kind: 'verb', id: v.forms.inf, p: v.p, e: v.e, v }); });
+VOCAB.forEach((w) => { if (!w.r) return; const r = normRoot(w.r); (ROOT_FAMILY[r] = ROOT_FAMILY[r] || []).push({ kind: 'word', id: w.w, p: w.p, e: w.en, w }); });
+
+/* how well a single verb is known: from Build / Change the tense answers */
+function verbMastery(inf) {
+  const xs = state.log.filter((x) => (x.mode === 'build' || x.mode === 'transform') && x.inf === inf);
+  if (!xs.length) return 'new';
+  const last = xs.slice(-10), right = last.filter((x) => x.correct).length;
+  const fast = last.filter((x) => x.correct && !x.paused && x.ms < 4000).length;
+  const forms = new Set(xs.filter((x) => x.correct).map((x) => x.tense + '|' + x.person)).size;
+  return (forms >= 5 && right / last.length >= 0.8 && fast >= 4) ? 'known' : 'learning';
+}
+function wordMastery(w) {
+  const st = vocabStatus()[w];
+  if (!st) return (state.wordcheck || {})[w] === 'k' ? 'known' : 'new';
+  if (st.status === 'known') return 'known';
+  const rec = ((state.stats || {})['voc|' + w] || {}).recent || [];
+  return rec.length >= 2 && rec.slice(-2).every((r) => r.ok) ? 'known' : 'learning';
+}
+const memberMastery = (m) => (m.kind === 'verb' ? verbMastery(m.id) : wordMastery(m.id));
+function rootMastery(r) {
+  const ms = (ROOT_FAMILY[normRoot(r)] || []).map(memberMastery);
+  if (ms.includes('known')) return 'known';
+  if (ms.includes('learning')) return 'learning';
+  return 'new';
+}
+function rootSummary() {
+  let known = 0, learning = 0, words = 0;
+  for (const r in ROOT_FAMILY) {
+    const m = rootMastery(r);
+    if (m === 'known') { known++; words += ROOT_FAMILY[r].length; } else if (m === 'learning') learning++;
+  }
+  return { known, learning, total: Object.keys(ROOT_FAMILY).length, words };
+}
+const DOT = { known: '●', learning: '◐', new: '○' };
+function rootFamilyHtml(root, selfId) {
+  const fam = ROOT_FAMILY[normRoot(root)] || [];
+  if (fam.length < 2) return '';
+  return `<div class="root-fam"><span class="small">Same root <span class="chip root">${rootLabel(root)}</span></span>
+    <span class="root-members" lang="he" dir="rtl">${fam.map((m) => `<span class="rm rm-${memberMastery(m)}${m.id === selfId ? ' rm-self' : ''}" title="${escHtml(m.e || '')}">${m.p}</span>`).join('')}</span></div>`;
+}
+
+/* ---------- Speed: how fast you think of a form, compared with before ---------- */
+function speedLine(key, ms, correct) {
+  const prev = (((state.stats || {})[key] || {}).recent || []).filter((r) => r.ok && r.ms !== null);
+  if (!correct || !prev.length) return '';
+  const first = prev[0].ms;
+  if (first - ms < 300) return '';
+  return `<div class="speed-up">Faster: ${secs(first)} → ${secs(ms)}</div>`;
+}
+function speedSection() {
+  const by = {};
+  state.log.forEach((x) => {
+    if (!x.correct || x.paused || x.ms >= PAUSE_MS || !x.thinkFirst || !['build', 'transform', 'vocab'].includes(x.mode)) return;
+    (by[x.key] = by[x.key] || []).push(x);
+  });
+  const gains = Object.values(by).filter((xs) => xs.length >= 2).map((xs) => ({ x: xs[xs.length - 1], from: xs[0].ms, to: xs[xs.length - 1].ms }))
+    .filter((g) => g.from - g.to >= 500).sort((a, b) => (b.from - b.to) - (a.from - a.to)).slice(0, 8);
+  // weekly median thinking time when right
+  const weeks = {};
+  state.log.forEach((x) => {
+    if (!x.correct || x.paused || x.ms >= PAUSE_MS || !x.thinkFirst || !x.at) return;
+    const d = new Date(x.at); const wk = new Date(d.getFullYear(), d.getMonth(), d.getDate() - d.getDay()).toISOString().slice(0, 10);
+    (weeks[wk] = weeks[wk] || []).push(x.ms);
+  });
+  const wk = Object.keys(weeks).sort().slice(-8).map((k) => ({ k, m: median(weeks[k]), n: weeks[k].length }));
+  const max = Math.max(1, ...wk.map((w) => w.m));
+  const label = (x) => x.mode === 'vocab' ? x.answer : `${x.answer}`;
+  return `<h3>Speed</h3>
+    <p class="note">How quickly you think of the answer, before the choices appear. This is the closest thing here to speaking without stopping to work it out.</p>
+    ${wk.length ? `<div class="wk-bars">${wk.map((w) => `<div class="wk"><span class="wk-bar" style="height:${Math.round(100 * w.m / max)}%"></span><b>${secs(w.m)}</b><span>${w.k.slice(5).replace('-', '/')}</span></div>`).join('')}</div><p class="note">Median thinking time per week, when right. Lower is better.</p>` : '<p class="note">Answer a few rounds with "think first" on to see this.</p>'}
+    ${gains.length ? `<div class="table-wrap"><table><thead><tr><th>Getting faster</th><th>First time</th><th>Now</th></tr></thead><tbody>${gains.map((g) => `<tr><td class="he">${label(g.x)}</td><td>${secs(g.from)}</td><td>${secs(g.to)}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+}
+function rootsSection() {
+  const sum = rootSummary();
+  const card = (r) => `<details class="root-card rc-${rootMastery(r)}"><summary><span class="rc-root" lang="he">${rootLabel(r)}</span><span class="rc-n">${ROOT_FAMILY[r].length}</span></summary>
+      <div class="root-members" lang="he" dir="rtl">${ROOT_FAMILY[r].map((m) => `<span class="rm rm-${memberMastery(m)}" title="${escHtml(m.e || '')}">${m.p}</span>`).join('')}</div></details>`;
+  const all = Object.keys(ROOT_FAMILY);
+  const started = all.filter((r) => rootMastery(r) !== 'new').sort((a, b) => (rootMastery(a) === 'known' ? 0 : 1) - (rootMastery(b) === 'known' ? 0 : 1));
+  const fresh = all.filter((r) => rootMastery(r) === 'new');
+  return `<h3>Your roots</h3>
+    <p class="note">Hebrew words are built from roots. Each root you know makes its other words easier. A root counts as known once you know one of its words well. Tap a root to see its words.</p>
+    <div class="summary"><div><b>${sum.known}</b><span>roots known</span></div><div><b>${sum.words}</b><span>words from those roots</span></div><div><b>${sum.learning}</b><span>roots in progress</span></div></div>
+    ${started.length ? `<div class="root-grid">${started.map(card).join('')}</div>` : ''}
+    ${fresh.length ? `<details class="more-detail"><summary>${fresh.length} roots not started yet</summary><div class="root-grid">${fresh.map(card).join('')}</div></details>` : ''}
+    <p class="note">● known · ◐ learning · ○ not started</p>`;
+}
+
+/* ---------- Fading nekudot: words you know show without vowels; tap to see them ---------- */
+const FUNC_LEMMAS = new Set(["את", "לא", "אני", "זה", "של", "ל", "אתה", "מה", "הוא", "על", "כל", "כן", "עם", "יש", "היא", "אבל", "אם", "אנחנו", "זאת", "אז", "הם", "אל", "אחד", "אין", "למה", "היי", "משהו", "או", "כמו", "איך", "ב", "מי", "כמה", "גם", "כדי", "מן", "כי", "אלה", "האם", "מישהו", "אתם", "עצם", "בשביל", "לפני", "שניים", "איפה", "עד", "אף", "ובכן", "הנה", "אה", "איזה", "שום", "כזה", "אחרי", "בגלל", "אוקיי", "הו", "אנו", "עבור", "כלום", "בלי", "אי", "תוך", "שלוש", "אך", "זהו", "בין", "הן", "לאן", "לגבי", "במקום", "ללא", "תחת", "מתי", "לאחר", "כאשר", "מאז", "אוי", "במשך", "וואו", "לכן", "אלא", "היכן", "אותו", "מדוע", "אצל", "כפי", "למען", "בעוד", "הלו", "בלתי", "מחוץ", "חוץ", "נו", "נגד", "ליד", "חמש", "ביי", "הא", "מאשר", "אלף", "בנוגע", "מול", "מתחת", "בתור", "לפי", "מעל", "שאר", "למרות", "מיליון", "מאחורי", "מפני", "אשר", "ככל", "על-ידי", "מאה", "הלא", "ארבע", "עשר", "כלשהו", "הללו", "מתוך", "פי", "שש", "אהה", "כיצד", "אילו", "יו", "שמונה", "משום", "מכיוון", "ארבעה", "במהלך", "הכל", "בפני", "הצילו", "שבע", "סביב", "עשרה"].concat(["לי", "לך", "לו", "לה", "לנו", "לכם", "להם", "אותי", "אותך", "אותו", "אותה", "אותנו", "אתכם", "אותם", "שלי", "שלך", "שלו", "שלה", "שלנו", "שלכם", "שלהם", "איתי", "איתך", "איתו", "איתה", "איתנו", "איתכם", "איתם", "בי", "בך", "בו", "בה", "בנו", "בהם", "ממני", "ממך", "ממנו", "ממנה", "מהם", "עליי", "עליך", "עליו", "עליה", "עלינו", "אליי", "אליך", "אליו", "אליה", "אלינו"]));
+function knownLemmas() {
+  const k = new Set();
+  if (state.settings.fadeBasic !== false) FUNC_LEMMAS.forEach((w) => k.add(w));
+  Object.entries(state.wordcheck || {}).forEach(([w, v]) => { if (v === 'k') k.add(w); });
+  VOCAB.forEach((w) => { if (wordMastery(w.w) === 'known') k.add(w.w); });
+  VERBS.forEach((v) => { if (verbMastery(v.forms.inf) === 'known') k.add(v.forms.inf); });
+  return k;
+}
+let _known = null, _knownAt = -1;
+const knownNow = () => { if (_knownAt !== state.log.length + Object.keys(state.wordcheck || {}).length + Object.keys(state.vocab || {}).length) { _known = knownLemmas(); _knownAt = state.log.length + Object.keys(state.wordcheck || {}).length + Object.keys(state.vocab || {}).length; } return _known; };
+function fadeWord(pw) {
+  const u = stripNiqqud(pw);
+  const hit = glossLookup(u);
+  const lemma = hit ? stripNiqqud(hit.g.l) : u;
+  if (!knownNow().has(lemma) && !knownNow().has(u)) return pw;
+  return `<span class="wf" data-p="${pw}">${u}</span>`;
+}
+/* fade every known word in a pointed sentence, except the substring `keep` (the word being taught) */
+function fadeNiqqud(sentence, keep) {
+  if (state.settings.fade === false) return sentence;
+  const doPart = (t) => t.replace(/[א-ת][֑-ׇא-ת]*/g, (w) => fadeWord(w));
+  if (keep && sentence.includes(keep)) { const i = sentence.indexOf(keep); return doPart(sentence.slice(0, i)) + keep + doPart(sentence.slice(i + keep.length)); }
+  return doPart(sentence);
+}
+document.addEventListener('click', (e) => {
+  const w = e.target.closest('.wf');
+  if (w && !w.classList.contains('wf-on')) { e.stopPropagation(); w.classList.add('wf-on'); w.textContent = w.dataset.p; }
+}, true);
+function fadeSettingsHtml() {
+  return `<label class="toggle" for="set-fade"><input type="checkbox" id="set-fade" ${state.settings.fade !== false ? 'checked' : ''}> Leave nekudot off words I already know (tap a word to see them)</label>
+    <label class="toggle" for="set-fadebasic"><input type="checkbox" id="set-fadebasic" ${state.settings.fadeBasic !== false ? 'checked' : ''}> Count basic words (של, אני, הוא, כי…) as known</label>`;
+}
+function wireFadeSettings() {
+  [['set-fade', 'fade'], ['set-fadebasic', 'fadeBasic']].forEach(([id, k]) => { const el = document.getElementById(id); if (el) el.addEventListener('change', () => { state.settings[k] = el.checked; _knownAt = -1; save(); renderVocab(); }); });
+}
+
+/* ---------- Say it aloud (where the browser supports Hebrew speech recognition) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const SPEECH = !!SR && !/Firefox/.test(navigator.userAgent);
+function listenFor(answer, also, out, btn, done) {
+  let rec;
+  try { rec = new SR(); } catch (e) { out.hidden = false; out.textContent = 'Speech isn\'t available in this browser.'; return; }
+  rec.lang = 'he-IL'; rec.interimResults = false; rec.maxAlternatives = 5;
+  out.hidden = false; out.className = 'say-out'; out.textContent = 'Listening… say the form.'; btn.disabled = true;
+  let finished = false;
+  rec.onresult = (ev) => {
+    finished = true;
+    const alts = [...ev.results[0]].map((a) => stripNiqqud(a.transcript.trim()));
+    const words = alts.flatMap((a) => a.split(/[^א-ת]+/)).filter(Boolean);
+    const ok = words.includes(answer) || also.some((x) => words.includes(x));
+    out.className = 'say-out ' + (ok ? 'good' : 'bad');
+    out.innerHTML = ok ? `Heard <span class="he">${answer}</span> ✓` : `Heard <span class="he">${alts[0] || '…'}</span>. Now pick from the choices.`;
+    done(ok, alts[0] || '');
+  };
+  rec.onerror = (ev) => { finished = true; btn.disabled = false; out.textContent = ev.error === 'not-allowed' ? 'Microphone permission was blocked.' : 'Didn\'t catch that. Try again, or just tap "I have it".'; };
+  rec.onend = () => { btn.disabled = false; if (!finished) out.textContent = 'Didn\'t catch that. Try again, or just tap "I have it".'; };
+  rec.start();
+}
+
 renderBuild();
 renderHome();
 renderTransform();
