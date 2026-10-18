@@ -5,46 +5,46 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<title>Language Tool</title>
+<title>שורש · Hebrew from the root</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Assistant:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Hebrew:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: one drill column. Tabs on top; the current card in the middle; feedback directly under the answer. Same ink-blue identity as the Ladder Reader, with an amber root color. */
 :root {
-  --bg: #eef1f4;
-  --surface: #ffffff;
-  --ink: #18202b;
-  --muted: #5a6574;
-  --line: #d6dce4;
-  --accent: #2c55c9;
-  --accent-soft: rgba(44, 85, 201, 0.10);
-  --root: #a8650f;
-  --good: #1f7a4d;
-  --good-soft: rgba(31, 122, 77, 0.12);
-  --bad: #b3362b;
-  --bad-soft: rgba(179, 54, 43, 0.10);
+  --bg: #E8DCC6;
+  --surface: #F3ECDF;
+  --ink: #3A2E22;
+  --muted: #5E4C38;
+  --line: #D6C6A9;
+  --accent: #A84A28;
+  --accent-ink: #FBF5EA;
+  --accent-deep: #6E2E15;
+  --accent-soft: rgba(168, 74, 40, 0.10);
+  --root: #8A5A1C;
+  --good: #2F6B3F;
+  --good-soft: rgba(47, 107, 63, 0.13);
+  --bad: #9B2C2C;
+  --bad-soft: rgba(155, 44, 44, 0.10);
+  --slab-edge: #CDB998;
+  --slab-margin: #EDE3D1;
+  --slab-line: #D8C6A7;
+  --slab-drop: #B8A281;
+  --slab-shadow: rgba(80, 58, 30, 0.14);
+  --carve-hi: #FBF5EA;
+  --carve-lo: rgba(90, 45, 20, 0.35);
+  --stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='264'%3E%3Cfilter id='m' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.78 0 0 0 0 0.66 0 0 0 0 0.47 0 0 0 0.9 -0.25'/%3E%3C/filter%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.33 0 0 0 0 0.22 0 0 0 1 -0.38'/%3E%3C/filter%3E%3Crect width='300' height='264' fill='%23E8DCC6'/%3E%3Crect width='300' height='264' filter='url%28%23m%29' opacity='0.55'/%3E%3Crect width='300' height='264' filter='url%28%23g%29' opacity='0.6'/%3E%3Cpath d='M0 1H300M0 67H300M0 133H300M0 199H300M1 0V66M151 0V66M76 66V132M226 66V132M1 132V198M151 132V198M76 198V264M226 198V264' stroke='%23C4AF8D' stroke-width='1.6' fill='none'/%3E%3Cpath d='M0 2.6H300M0 68.6H300M0 134.6H300M0 200.6H300M2.6 2V66M152.6 2V66M77.6 68V132M227.6 68V132M2.6 134V198M152.6 134V198M77.6 200V264M227.6 200V264' stroke='%23F5EEE0' stroke-width='1' fill='none'/%3E%3C/svg%3E");
   --font-hebrew: "Frank Ruhl Libre", "Noto Serif Hebrew", "David", "Times New Roman", serif;
-  --font-ui: "IBM Plex Sans", "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-ui-he: "IBM Plex Sans Hebrew", "IBM Plex Sans", system-ui, sans-serif;
+  --font-ui: "Assistant", "IBM Plex Sans Hebrew", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-ui-he: "Assistant", "IBM Plex Sans Hebrew", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12161c; --surface: #1a2029; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3542;
-    --accent: #8aa8ff; --accent-soft: rgba(138, 168, 255, 0.14); --root: #f0b45c;
-    --good: #5cc98f; --good-soft: rgba(92, 201, 143, 0.14); --bad: #ff8a7a; --bad-soft: rgba(255, 138, 122, 0.12);
-    color-scheme: dark;
-  }
+  :root:not([data-theme="light"]) { --bg: #1E1913; --surface: #2A231B; --ink: #F0E7D8; --muted: #B9A88F; --line: #43382B; --accent: #E08A62; --accent-ink: #1E1913; --accent-deep: #8E4A2C; --accent-soft: rgba(224, 138, 98, 0.15); --root: #D9A55B; --good: #7FC79A; --good-soft: rgba(127, 199, 154, 0.14); --bad: #FF8F7F; --bad-soft: rgba(255, 143, 127, 0.12); --slab-edge: #4A3D2E; --slab-margin: #2F271E; --slab-line: #43382B; --slab-drop: #0E0B08; --slab-shadow: rgba(0, 0, 0, 0.35); --carve-hi: rgba(0, 0, 0, 0.5); --carve-lo: rgba(255, 220, 190, 0.12); --stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='264'%3E%3Cfilter id='m' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.16 0 0 0 0 0.11 0 0 0 0.9 -0.25'/%3E%3C/filter%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.04 0 0 0 0 0.03 0 0 0 1 -0.38'/%3E%3C/filter%3E%3Crect width='300' height='264' fill='%231E1913'/%3E%3Crect width='300' height='264' filter='url%28%23m%29' opacity='0.6'/%3E%3Crect width='300' height='264' filter='url%28%23g%29' opacity='0.5'/%3E%3Cpath d='M0 1H300M0 67H300M0 133H300M0 199H300M1 0V66M151 0V66M76 66V132M226 66V132M1 132V198M151 132V198M76 198V264M226 198V264' stroke='%23120E0A' stroke-width='1.6' fill='none'/%3E%3Cpath d='M0 2.6H300M0 68.6H300M0 134.6H300M0 200.6H300M2.6 2V66M152.6 2V66M77.6 68V132M227.6 68V132M2.6 134V198M152.6 134V198M77.6 200V264M227.6 200V264' stroke='%232E261D' stroke-width='1' fill='none'/%3E%3C/svg%3E"); color-scheme: dark; }
 }
-:root[data-theme="dark"] {
-  --bg: #12161c; --surface: #1a2029; --ink: #e6ebf2; --muted: #9aa5b4; --line: #2c3542;
-  --accent: #8aa8ff; --accent-soft: rgba(138, 168, 255, 0.14); --root: #f0b45c;
-  --good: #5cc98f; --good-soft: rgba(92, 201, 143, 0.14); --bad: #ff8a7a; --bad-soft: rgba(255, 138, 122, 0.12);
-  color-scheme: dark;
-}
+:root[data-theme="dark"] { --bg: #1E1913; --surface: #2A231B; --ink: #F0E7D8; --muted: #B9A88F; --line: #43382B; --accent: #E08A62; --accent-ink: #1E1913; --accent-deep: #8E4A2C; --accent-soft: rgba(224, 138, 98, 0.15); --root: #D9A55B; --good: #7FC79A; --good-soft: rgba(127, 199, 154, 0.14); --bad: #FF8F7F; --bad-soft: rgba(255, 143, 127, 0.12); --slab-edge: #4A3D2E; --slab-margin: #2F271E; --slab-line: #43382B; --slab-drop: #0E0B08; --slab-shadow: rgba(0, 0, 0, 0.35); --carve-hi: rgba(0, 0, 0, 0.5); --carve-lo: rgba(255, 220, 190, 0.12); --stone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='264'%3E%3Cfilter id='m' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.16 0 0 0 0 0.11 0 0 0 0.9 -0.25'/%3E%3C/filter%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.04 0 0 0 0 0.03 0 0 0 1 -0.38'/%3E%3C/filter%3E%3Crect width='300' height='264' fill='%231E1913'/%3E%3Crect width='300' height='264' filter='url%28%23m%29' opacity='0.6'/%3E%3Crect width='300' height='264' filter='url%28%23g%29' opacity='0.5'/%3E%3Cpath d='M0 1H300M0 67H300M0 133H300M0 199H300M1 0V66M151 0V66M76 66V132M226 66V132M1 132V198M151 132V198M76 198V264M226 198V264' stroke='%23120E0A' stroke-width='1.6' fill='none'/%3E%3Cpath d='M0 2.6H300M0 68.6H300M0 134.6H300M0 200.6H300M2.6 2V66M152.6 2V66M77.6 68V132M227.6 68V132M2.6 134V198M152.6 134V198M77.6 200V264M227.6 200V264' stroke='%232E261D' stroke-width='1' fill='none'/%3E%3C/svg%3E"); color-scheme: dark; }
 * { box-sizing: border-box; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; padding-block: 24px 56px; padding-inline: 16px; }
+body { background: var(--bg) var(--stone); background-attachment: fixed; min-height: 100vh; margin: 0; color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; padding-block: 24px 56px; padding-inline: 16px; }
 .wrap { max-width: 680px; margin: 0 auto; display: grid; gap: 18px; }
 header { display: grid; gap: 4px; }
 .eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
@@ -53,7 +53,9 @@ h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 600; text-wrap: 
 
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); }
 .tab { font: 500 14px var(--font-ui); background: none; border: 0; color: var(--muted); padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.tabs { border-bottom-color: var(--slab-edge); }
+.tab { font-weight: 600; }
 .home { display: grid; gap: 14px; }
 .home-intro { margin: 0; color: var(--muted); }
 .home-start { background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; margin: 0; }
@@ -66,7 +68,8 @@ h1 { margin: 0; font-size: 26px; line-height: 1.2; font-weight: 600; text-wrap: 
 .home-card .home-stat { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
 .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 16px; }
+.slab, .card { background: var(--surface); border: 1px solid var(--slab-edge); border-radius: 4px; box-shadow: inset 0 0 0 7px var(--slab-margin), inset 0 0 0 8px var(--slab-line), 0 2px 0 var(--slab-drop), 0 6px 14px var(--slab-shadow); }
+.card { padding: 24px; display: grid; gap: 16px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .between { justify-content: space-between; }
 label.small { font-size: 13px; color: var(--muted); }
@@ -83,7 +86,7 @@ select { font: 15px var(--font-ui); padding: 6px 8px; border: 1px solid var(--li
 .prompt-line .q { font-family: var(--font-hebrew); color: var(--muted); }
 
 .options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.opt { font: 500 26px var(--font-hebrew); direction: rtl; padding: 14px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.opt { font: 500 26px var(--font-hebrew); direction: rtl; padding: 14px 10px; border-radius: 4px; border: 1px solid var(--slab-edge); box-shadow: 0 1px 0 var(--slab-drop); background: var(--surface); color: var(--ink); cursor: pointer; }
 .opt:hover:not(:disabled) { border-color: var(--accent); }
 .opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .opt.right { border-color: var(--good); background: var(--good-soft); }
@@ -99,8 +102,8 @@ select { font: 15px var(--font-ui); padding: 6px 8px; border: 1px solid var(--li
 .he { font-family: var(--font-hebrew); font-size: 20px; direction: rtl; unicode-bidi: isolate; }
 .note { color: var(--muted); font-size: 14px; margin: 0; max-width: 62ch; }
 
-button.btn { font: 500 14px var(--font-ui); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; padding: 8px 14px; cursor: pointer; }
-button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.btn { font: 600 15px var(--font-ui); border: 1px solid var(--slab-edge); background: var(--surface); color: var(--ink); border-radius: 4px; padding: 8px 14px; cursor: pointer; }
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 2px 0 var(--accent-deep); font-weight: 700; }
 button.btn:hover { border-color: var(--accent); }
 button.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -126,7 +129,7 @@ textarea#log-out { width: 100%; min-height: 120px; font: 12px var(--font-mono); 
 footer { font-size: 12.5px; color: var(--muted); max-width: 62ch; }
 
 @media (max-width: 480px) {
-  .card { padding: 16px; }
+  .card { padding: 20px 18px; }
   .opt { font-size: 23px; padding: 12px 8px; }
   .summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -215,7 +218,7 @@ footer { font-size: 12.5px; color: var(--muted); max-width: 62ch; }
 .cmt-quote { border-left: 3px solid var(--root); background: var(--bg); padding: 8px 10px; border-radius: 6px; font-size: 14px; color: var(--muted); max-height: 7.5em; overflow: hidden; }
 .chips-pick { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-pick { border: 1px solid var(--line); background: none; color: var(--ink); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 13px; cursor: pointer; }
-.chip-pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip-pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .modal textarea, .modal input[type=text] { width: 100%; box-sizing: border-box; font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; }
 .modal textarea:focus, .modal input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 0; }
 .modal-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -271,6 +274,32 @@ table.gender td.he { font-size: 19px; line-height: 1.8; }
 
 .settings { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
 .settings h3 { margin: 0; font-size: 15px; }
+
+/* Jerusalem stone: carved wordmark, stone slabs, root pills */
+.brand { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.wordmark { margin: 0; font: 900 64px/1 var(--font-hebrew); color: var(--accent); text-shadow: 0 1px 0 var(--carve-hi), 0 -1px 0 var(--carve-lo); }
+.tagline { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+@media (max-width: 480px) { .wordmark { font-size: 56px; } }
+.home-roots-slab { padding: 20px 22px; display: grid; gap: 12px; }
+.hr-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.hr-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.root-pills { display: flex; flex-wrap: wrap; gap: 8px; direction: rtl; font: 700 21px var(--font-hebrew); }
+.rp { padding: 2px 12px; border-radius: 3px; }
+.rp-known { background: var(--accent); color: var(--accent-ink); }
+.rp-learning { border: 1.5px solid var(--accent); color: var(--accent); }
+.home-list { display: flex; flex-direction: column; padding: 8px 22px; }
+.home-row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: inherit; text-align: start; cursor: pointer; width: 100%; }
+.home-row:last-child { border-bottom: 0; }
+.home-row:hover .hr-title, .home-row:focus-visible .hr-title { color: var(--accent); }
+.home-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hr-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.hr-title { font-size: 19px; font-weight: 700; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.hr-title .he-sample { font: 500 18px var(--font-hebrew); color: var(--accent); direction: rtl; }
+.hr-desc { font-size: 14px; color: var(--muted); }
+.hr-stat { font: 12px var(--font-mono); color: var(--muted); }
+.home-row svg { flex: none; color: var(--accent); }
+a { color: var(--accent); }
+.home-intro, .home-start { background: var(--surface); border-radius: 4px; padding: 10px 14px; border: 1px solid var(--slab-edge); }
 </style>
 </head>
 <body>
@@ -285,9 +314,10 @@ table.gender td.he { font-size: 19px; line-height: 1.8; }
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Prototype v0 · Hebrew verbs and words</div>
-    <h1>Language Tool</h1>
-    <p class="lede">Build and change Hebrew verb forms across binyanim, tenses and persons, and learn new words from context. What you get right quickly comes up less; what slows you down comes back.</p>
+    <div class="brand">
+      <h1 class="wordmark" lang="he" dir="rtl">שׁוֹרֶשׁ</h1>
+      <p class="tagline">Hebrew that grows from the root</p>
+    </div>
     <div class="account-row" id="acct-row" hidden></div>
     <div class="feedback-row" id="fb-row"><button class="btn primary small" type="button" id="fb-btn">💬 Leave feedback</button><span class="note-inline" id="fb-note">Or tap "Comment" on any question, or any part of the Guide.</span></div>
   </header>
@@ -2432,16 +2462,27 @@ function renderHome() {
   host.innerHTML = `
     ${fresh ? `<p class="home-start"><strong>New here?</strong> Start with <a href="#" data-go="guide">How to spot the binyan</a> in the Guide (two minutes), then try <a href="#" data-go="build">Build the form</a>. The drills adapt to you as you go.</p>`
       : `<p class="home-intro">Pick up where you left off, or try something new. What you get right quickly comes up less; what slows you down comes back.</p>`}
-    ${(() => { const r = rootSummary(); return r.known ? `<p class="home-roots">You know <strong>${r.known}</strong> roots, which give you <strong>${r.words}</strong> words in this app. <a href="#" data-go="progress">See your roots</a></p>` : ''; })()}
-    <p class="home-intro">Tip: tap any word in a Hebrew sentence to see what it means.</p>
-    <div class="home-grid">${HOME_ITEMS.map((it) => {
+    ${homeRootsHtml()}
+    <nav class="slab home-list" aria-label="Sections">${HOME_ITEMS.map((it) => {
       const n = it.mode ? count(it.mode) : 0;
       const stat = it.mode === 'vocab' ? `${Object.keys(state.vocab || {}).length} of ${VOCAB.length} words seen` : it.mode ? (n ? `${n} answered` : 'Not started') : '';
-      return `<button class="home-card" type="button" data-go="${it.view}">
-        <h3><span>${it.title}</span>${it.he ? `<span class="he-sample" lang="he">${it.he}</span>` : ''}</h3>
-        <p>${it.text}</p>${stat ? `<span class="home-stat">${stat}</span>` : ''}
+      return `<button class="home-row" type="button" data-go="${it.view}">
+        <span class="hr-text"><span class="hr-title"><span>${it.title}</span>${it.he ? `<span class="he-sample" lang="he">${it.he}</span>` : ''}</span>
+        <span class="hr-desc">${it.text}</span>${stat ? `<span class="hr-stat">${stat}</span>` : ''}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>`;
-    }).join('')}</div>`;
+    }).join('')}</nav>
+    <p class="home-intro">Tip: tap any word in a Hebrew sentence to see what it means.</p>`;
+}
+function homeRootsHtml() {
+  const r = rootSummary();
+  const started = Object.keys(ROOT_FAMILY).map((k) => ({ k, m: rootMastery(k) })).filter((x) => x.m !== 'new')
+    .sort((a, b) => (a.m === 'known' ? 0 : 1) - (b.m === 'known' ? 0 : 1)).slice(0, 14);
+  if (!started.length) return '';
+  return `<section class="slab home-roots-slab">
+    <div class="hr-head"><span class="hr-label">Your roots</span><span><strong>${r.known}</strong> known · <strong>${r.words}</strong> words · <a href="#" data-go="progress">See all</a></span></div>
+    <div class="root-pills" lang="he">${started.map((x) => `<span class="rp rp-${x.m}">${rootLabel(x.k)}</span>`).join('')}</div>
+  </section>`;
 }
 document.addEventListener('click', (e) => {
   const g = e.target.closest('[data-go]'); if (!g) return;
@@ -2857,7 +2898,7 @@ function openComment(o) {
       try { status.textContent = 'Sending…'; await netlifyPost('feedback', fields); status.textContent = 'Sent. Thank you!'; setTimeout(closeComment, 1200); return; }
       catch (e) { status.textContent = ''; }
     }
-    const text = `Language Tool comment${tab ? ' · ' + tab : ''}${tags.length ? ' · ' + tags.join(', ') : ''}\n\n${o.context ? o.context + '\n\n' : ''}${message || ''}${name ? '\n— ' + name : ''}${summary ? '\n\nMy results:\n' + summary : ''}`;
+    const text = `שורש comment${tab ? ' · ' + tab : ''}${tags.length ? ' · ' + tags.join(', ') : ''}\n\n${o.context ? o.context + '\n\n' : ''}${message || ''}${name ? '\n— ' + name : ''}${summary ? '\n\nMy results:\n' + summary : ''}`;
     btn.disabled = false;
     if (navigator.share) {
       try { await navigator.share({ text }); status.textContent = 'Thank you!'; setTimeout(closeComment, 1000); return; }

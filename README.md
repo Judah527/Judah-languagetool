@@ -1,4 +1,4 @@
-# Language Tool
+# שורש — Hebrew that grows from the root
 
 Hebrew practice: verb forms across binyanim, sibling verbs, and new words in context.
 
